@@ -1,0 +1,48 @@
+{
+  "name": "@relay-sdk/sdk-node",
+  "version": "1.4.1",
+  "description": "Official Relay Delivery Platform Server SDK for Node.js - REST API client for task management and webhooks",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && tsc",
+    "clean": "rm -rf dist",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "prepublishOnly": "pnpm run typecheck && pnpm run test && pnpm run build"
+  },
+  "keywords": [
+    "relay",
+    "delivery",
+    "logistics",
+    "sdk",
+    "api",
+    "nodejs"
+  ],
+  "author": "SendRelay",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SendRelay/relay-sdk-node.git"
+  },
+  "homepage": "https://sendrelay.com.ng",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "@typescript-eslint/eslint-plugin": "^8.59.4",
+    "@typescript-eslint/parser": "^8.59.4",
+    "eslint": "^10.4.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  }
+}
