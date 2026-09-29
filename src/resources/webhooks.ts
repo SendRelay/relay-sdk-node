@@ -34,7 +34,7 @@ export class Webhooks {
    * Register a new webhook endpoint
    *
    * @param request - Webhook registration details
-   * @param options - Optional dashboard developer token override
+   * @param options - Legacy optional developer token; SDK API key is still required
    * @returns Webhook with signing secret (shown only once)
    *
    * @example
@@ -51,7 +51,7 @@ export class Webhooks {
    * });
    *
    * // IMPORTANT: Save the secret - it's only shown once!
-   * console.log('Webhook secret:', webhook.secret);
+   * // Store webhook.secret securely; it is returned once.
    * ```
    */
   async create(

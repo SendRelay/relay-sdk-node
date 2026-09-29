@@ -176,29 +176,29 @@ const nearby = await relay.tasks.availableRiders(created.task.taskId, { tier: 1 
 
 ## Webhooks API
 
-Webhook management endpoints use developer JWT auth (`Authorization: Bearer ...`), not API key auth.
+Webhook management calls use `X-Relay-Key` on `/v1/sdk/webhooks`. Complete onboarding and obtain a `VERIFIED` business profile before create, update, or delete, including for `mode: 'test'`. Test keys do not bypass this gate. List and get require a valid API key but do not invoke the profile-verification gate. The signed-in dashboard uses `/v1/developer/webhooks`; inbound payment provider callbacks use `/v1/webhooks/stripe` and `/v1/webhooks/flutterwave`. A developer JWT alone does not authorize SDK webhook CRUD. While approval is pending, use the [local signed receiver fixture](../../../apps/docs/static/examples/webhook-local-fixture.mjs); its events are locally generated, not Relay-delivered sandbox events.
 
 ```ts
-const developerToken = process.env.RELAY_DEVELOPER_JWT!;
-
 // Create
 const webhook = await relay.webhooks.create({
   url: 'https://yourapp.com/webhooks/relay',
-  events: ['task.status.assigned', 'task.status.completed', 'payment.released'],
-  description: 'Production webhook',
-  mode: 'live',
-}, { developerToken });
+  events: ['task.status.completed', 'task.status.failed'],
+  description: 'Test webhook',
+  mode: 'test',
+});
 
-// Save this once: webhook.secret
+// Store webhook.secret securely once; never log it.
 
 // List / Get / Update / Delete
-await relay.webhooks.list({ developerToken });
-await relay.webhooks.get(webhook.id, { developerToken });
+await relay.webhooks.list();
+await relay.webhooks.get(webhook.id);
 await relay.webhooks.update(webhook.id, {
   events: ['task.status.completed', 'task.status.failed'],
-}, { developerToken });
-await relay.webhooks.delete(webhook.id, { developerToken });
+});
+await relay.webhooks.delete(webhook.id);
 ```
+
+After registering a test endpoint with a `sk_test_...` key, create a test task with `simulationOutcome: 'SUCCESS'` to exercise matching test-mode lifecycle events. See the [simulation guide](../../../apps/docs/docs/simulation/index.md). The local fixture does not send Relay events.
 
 ### Verify Webhook Signature
 
