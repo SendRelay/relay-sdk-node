@@ -99,6 +99,8 @@ Notes:
 
 ## Tasks API
 
+Quotes use `POST /v1/sdk/tasks/quote`; task creation uses `POST /v1/sdk/tasks`. See the [quote guide](https://docs.sendrelay.com.ng/getting-started/quotes-and-delayed-commit) and [error reference](https://docs.sendrelay.com.ng/reference/errors).
+
 ```ts
 // Quote
 const quote = await relay.tasks.quote({
@@ -178,6 +180,8 @@ const nearby = await relay.tasks.availableRiders(created.task.taskId, { tier: 1 
 
 Webhook management calls use `X-Relay-Key` on `/v1/sdk/webhooks`. Complete onboarding and obtain a `VERIFIED` business profile before create, update, or delete, including for `mode: 'test'`. Test keys do not bypass this gate. List and get require a valid API key but do not invoke the profile-verification gate. The signed-in dashboard uses `/v1/developer/webhooks`; inbound payment provider callbacks use `/v1/webhooks/stripe` and `/v1/webhooks/flutterwave`. A developer JWT alone does not authorize SDK webhook CRUD. While approval is pending, use the [local signed receiver fixture](../../../apps/docs/static/examples/webhook-local-fixture.mjs); its events are locally generated, not Relay-delivered sandbox events.
 
+Registration fails with `409` if you already have a webhook in that `mode` (delete it first) or hit the webhook limit, and with `400` if the URL is not public HTTPS or does not return `2xx` to Relay's verification request.
+
 ```ts
 // Create
 const webhook = await relay.webhooks.create({
@@ -202,7 +206,17 @@ After registering a test endpoint with a `sk_test_...` key, create a test task w
 
 ### Verify Webhook Signature
 
-Use the raw request body string, not parsed JSON.
+Use the raw request body string, not parsed JSON. Notes:
+
+- The secret is the `webhook.secret` returned when you created the endpoint, and it is **per mode**: a `test` endpoint is signed with the test secret, a `live` endpoint with the live one.
+- Timestamps must be within 300 seconds of your server clock (the `tolerance` argument); keep your server clock synced (NTP).
+- Log `result.error` for debugging but do not return it to callers in production.
+
+| `result.error` | Usual cause |
+|---|---|
+| `Invalid signature format` | Wrong header (use `x-relay-signature`) or the header was truncated/modified by a proxy |
+| `Timestamp outside tolerance window` | Server clock skew, or a replayed/old delivery |
+| `Signature verification failed` | Body was parsed and re-serialised (use the raw body), or you used the wrong-mode/old secret |
 
 ```ts
 import express from 'express';
@@ -222,7 +236,8 @@ app.post('/webhooks/relay', express.raw({ type: 'application/json' }), (req, res
   );
 
   if (!result.valid) {
-    return res.status(401).send(`Invalid signature: ${result.error}`);
+    console.warn('Relay webhook rejected:', result.error);
+    return res.status(401).send('Invalid signature');
   }
 
   const event = JSON.parse(payload);
@@ -272,6 +287,23 @@ try {
   }
 }
 ```
+
+### Common errors
+
+Errors are `ApiError` with `statusCode`, `code`, `message` and `details`. Validation failures (`422 VALIDATION_ERROR`) list each problem in the `details` array; a `ValidationError` is thrown client-side before any request is sent (e.g. a malformed API key). Full list: [docs.sendrelay.com.ng/reference/errors](https://docs.sendrelay.com.ng/reference/errors).
+
+| Status | `code` | Cause | Fix |
+|---|---|---|---|
+| 401 | `MISSING_API_KEY` / `MALFORMED_API_KEY` | `X-Relay-Key` missing or not a full `sk_test_...`/`sk_live_...` key | Copy the whole key (shown once) with no quotes or spaces |
+| 401 | `INVALID_API_KEY` | Key unknown, revoked or expired | Use the right key for this environment or create a new one |
+| 401 | `API_KEY_MODE_MISMATCH` | The `sk_test_`/`sk_live_` part was edited | Use the key exactly as issued |
+| 403 | `VERIFICATION_REQUIRED` | Live key or webhook before business verification is approved | Obtain business approval in Settings > Business profile; test keys do not bypass sensitive webhook gates |
+| 403 | `ONBOARDING_INCOMPLETE` | Business profile not submitted | Finish onboarding in the dashboard, then create your key |
+| 400 | `BAD_REQUEST` | `Idempotency-Key` missing on `tasks.create` | Pass `{ idempotencyKey }` as the second argument (the SDK does not generate one) |
+| 422 | `VALIDATION_ERROR` | Payload failed validation | Read the `details` array |
+| 404 / 409 | `QUOTE_NOT_FOUND` / `QUOTE_EXPIRED` / `QUOTE_CONSUMED` | Unknown/other-account, expired or already used quote | Request a new quote |
+| 422 | `QUOTE_PAYLOAD_MISMATCH` | Create payload differs from the quoted one | Send the same payload you quoted |
+| 409 | `INSUFFICIENT_WALLET_BALANCE` | Wallet lower than task total (amounts in kobo) | Top up under Wallet |
 
 ## Money Format
 
