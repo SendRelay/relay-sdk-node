@@ -7,6 +7,23 @@ Official server SDK for Relay.
 
 This package is for backend/server environments only. It uses your Relay API key and should never run in browsers or mobile apps.
 
+## Local HTTP integration check
+
+With the local Worker running, inspect the HTTP preflight without sending credentials:
+
+```bash
+curl -i -X OPTIONS http://localhost:8787/v1/sdk/tasks \
+  -H 'Origin: http://localhost:3000' \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: Authorization, Content-Type, x-relay-key'
+```
+
+Expect status `204`, wildcard allowed Origin, `Vary: Access-Control-Request-Headers`,
+and `Authorization,Content-Type,x-relay-key` in allowed headers. The Hono default
+method list includes `QUERY`; use the documented method for each Relay endpoint.
+A successful preflight does not authorize an API request. This server SDK does not
+perform browser preflights; keep API keys on the backend.
+
 ## Install
 
 ```bash
