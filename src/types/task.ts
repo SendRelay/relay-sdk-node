@@ -145,9 +145,9 @@ export interface Preferences {
   hasAirConditioning?: boolean | null;
   /** Allowed vehicle types */
   vehicleType?: VehicleType[] | null;
-  /** Allowed fleet organisations */
+  /** Better Auth fleet organisation IDs; empty means unrestricted. Independents remain eligible by default. */
   allowedOrganisations?: string[];
-  /** Blocked fleet organisations */
+  /** Any blocked fleet membership excludes the rider, including riders in allowed fleets. */
   blockedOrganisations?: string[];
   /** Whether independent riders are allowed */
   allowIndependentRiders?: boolean;
