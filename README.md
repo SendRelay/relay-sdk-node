@@ -339,3 +339,25 @@ const totalNaira = (totalKobo / 100).toFixed(2); // "5756.63"
 ## License
 
 MIT
+
+## Reduced dev configuration
+
+The reduced `dev` stage supports approved test-mode simulation, with provider
+integrations held. Point the SDK at the operator-supplied dev URL and use an
+approved test key:
+
+```ts
+const relay = new RelayClient({
+  apiKey: process.env.RELAY_TEST_API_KEY!,
+  baseUrl: devApiUrl,
+  maxRetries: 0, // A disabled integration cannot be enabled by retrying.
+});
+```
+
+Live quotes/tasks, payment callbacks, payment methods/topups, payouts and bank
+verification, provider routes, upload presigns, push configuration, built-in
+webhook test receivers and legacy CAPTCHA auth return HTTP 503 with
+`DEV_PROVIDER_DISABLED`. External webhook/email delivery is held on this stage.
+Missing required auth bindings return `DEV_AUTH_NOT_CONFIGURED`. Production
+configuration is unchanged. Creating the tutorial identity, key or webhook still
+requires its separate authorization; this example creates none of them.
