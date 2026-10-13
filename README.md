@@ -119,9 +119,16 @@ Notes:
 Quotes use `POST /v1/sdk/tasks/quote`; task creation uses `POST /v1/sdk/tasks`. See the [quote guide](https://docs.sendrelay.com.ng/getting-started/quotes-and-delayed-commit) and [error reference](https://docs.sendrelay.com.ng/reference/errors).
 
 Both methods accept `preferences` (vehicle, equipment, rating, and fleet requirements).
-Send the same preferences, including vehicle array order, when creating with `quoteId`;
+Send the same effective preferences when creating with `quoteId`;
 changes return `QUOTE_PAYLOAD_MISMATCH` and require a new quote. A quote locks pricing,
 but does not reserve a rider. `hasBox` requires a delivery box, not verified insulation.
+
+Multiple allowed vehicles receive one fixed quote at the highest complete fare;
+the price stays fixed whichever allowed vehicle is assigned. `pricingVehicleType`
+identifies the rate basis. Vehicle order and duplicates do not affect new quotes.
+Omitted or empty vehicles default to `CAR` for passenger rides and `MOTORCYCLE` for
+other tasks, for both pricing and dispatch. Existing quotes keep their original
+validation rules until expiry; preserve their original vehicle order.
 
 ```ts
 // Quote

@@ -143,7 +143,7 @@ export interface Preferences {
   hasRefrigeration?: boolean;
   /** Requires air conditioning */
   hasAirConditioning?: boolean;
-  /** Allowed vehicle types */
+  /** Unordered allowed types; fixed price is the highest complete fare. Empty/omitted defaults to CAR for passengers, MOTORCYCLE otherwise. */
   vehicleType?: VehicleType[];
   /** Better Auth fleet organisation IDs; empty means unrestricted. Independents remain eligible by default. */
   allowedOrganisations?: string[];
@@ -332,6 +332,8 @@ export interface PricingBreakdown {
   priorityFee: AmountInKobo;
   /** Estimated toll cost in kobo */
   tollFee?: AmountInKobo;
+  /** Rate basis of the fixed fare; any allowed vehicle may be assigned. */
+  pricingVehicleType?: VehicleType;
   /** Surge multiplier applied, when surge pricing is active */
   surgeMultiplier?: number;
   /** Whether surge pricing was applied */
