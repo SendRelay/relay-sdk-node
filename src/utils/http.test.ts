@@ -73,3 +73,49 @@ describe('HttpClient.verifyWebhookSignature', () => {
     ).toBe(false);
   });
 });
+
+describe('HttpClient retries', () => {
+  function createRetryingClient() {
+    return new HttpClient({
+      baseUrl: 'https://api.example.test',
+      apiVersion: 'v1',
+      apiKey: 'sk_test_abc',
+      timeout: 1000,
+      retry: {
+        enabled: true,
+        maxRetries: 2,
+        initialDelayMs: 1,
+        maxDelayMs: 1,
+        backoffMultiplier: 1,
+        retryableStatusCodes: [429],
+      },
+      idempotency: { autoGenerate: false },
+      headers: {},
+    });
+  }
+
+  function respondWith429(code: string) {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ error: { code, message: 'limited' } }), { status: 429 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  it('does not retry test-mode quota errors', async () => {
+    const fetchMock = respondWith429('TEST_QUOTA_EXCEEDED');
+    await expect(createRetryingClient().post('/sdk/tasks', {})).rejects.toMatchObject({
+      code: 'TEST_QUOTA_EXCEEDED',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('still retries burst rate limits', async () => {
+    const fetchMock = respondWith429('RATE_LIMITED');
+    await expect(createRetryingClient().post('/sdk/tasks', {})).rejects.toMatchObject({
+      code: 'RATE_LIMITED',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+});

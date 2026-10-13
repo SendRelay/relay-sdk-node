@@ -197,7 +197,7 @@ await relay.tasks.dispute(created.task.id, {
 
 ## Webhooks API
 
-Webhook management calls use `X-Relay-Key` on `/v1/sdk/webhooks`. Complete onboarding and obtain a `VERIFIED` business profile before create, update, or delete, including for `mode: 'test'`. Test keys do not bypass this gate. List and get require a valid API key but do not invoke the profile-verification gate. The signed-in dashboard uses `/v1/developer/webhooks`; inbound payment provider callbacks use `/v1/webhooks/stripe` and `/v1/webhooks/flutterwave`. A developer JWT alone does not authorize SDK webhook CRUD. While approval is pending, use the [local signed receiver fixture](../../../apps/docs/static/examples/webhook-local-fixture.mjs); its events are locally generated, not Relay-delivered sandbox events.
+Webhook management calls use `X-Relay-Key` on `/v1/sdk/webhooks`. Test-mode webhooks can be created, updated, and deleted from sign-up, before business approval. Live-mode webhooks require completed onboarding and a `VERIFIED` business profile. The signed-in dashboard uses `/v1/developer/webhooks`; inbound payment provider callbacks use `/v1/webhooks/stripe` and `/v1/webhooks/flutterwave`. A developer JWT alone does not authorize SDK webhook CRUD. To try a receiver before exposing it publicly, use the [local signed receiver fixture](../../../apps/docs/static/examples/webhook-local-fixture.mjs); its events are locally generated, not delivered by Relay.
 
 Registration fails with `409` if you already have a webhook in that `mode` (delete it first) or hit the webhook limit, and with `400` if the URL is not public HTTPS or does not return `2xx` to Relay's verification request.
 
@@ -316,8 +316,10 @@ Errors are `ApiError` with `statusCode`, `code`, `message` and `details`. Valida
 | 401 | `MISSING_API_KEY` / `MALFORMED_API_KEY` | `X-Relay-Key` missing or not a full `sk_test_...`/`sk_live_...` key | Copy the whole key (shown once) with no quotes or spaces |
 | 401 | `INVALID_API_KEY` | Key unknown, revoked or expired | Use the right key for this environment or create a new one |
 | 401 | `API_KEY_MODE_MISMATCH` | The `sk_test_`/`sk_live_` part was edited | Use the key exactly as issued |
-| 403 | `VERIFICATION_REQUIRED` | Live key or webhook before business verification is approved | Obtain business approval in Settings > Business profile; test keys do not bypass sensitive webhook gates |
-| 403 | `ONBOARDING_INCOMPLETE` | Business profile not submitted | Finish onboarding in the dashboard, then create your key |
+| 403 | `VERIFICATION_REQUIRED` | Live key or live-mode webhook before business verification is approved | Obtain business approval in Settings > Business profile; test mode needs no approval |
+| 403 | `ONBOARDING_INCOMPLETE` | Live key or live-mode webhook before the business profile is submitted | Finish onboarding in the dashboard |
+| 429 | `RATE_LIMITED` | Burst limit (600 requests/min per API key) | Retried automatically with backoff |
+| 429 | `TEST_QUOTA_EXCEEDED` / `TEST_CONCURRENCY_EXCEEDED` | Test-mode simulation limit reached | Not retried. Wait, or submit your profile / get verified to raise the limit |
 | 400 | `BAD_REQUEST` | `Idempotency-Key` missing on `tasks.create` | Pass `{ idempotencyKey }` as the second argument (the SDK does not generate one) |
 | 422 | `VALIDATION_ERROR` | Payload failed validation | Read the `details` array |
 | 404 / 409 | `QUOTE_NOT_FOUND` / `QUOTE_EXPIRED` / `QUOTE_CONSUMED` | Unknown/other-account, expired or already used quote | Request a new quote |

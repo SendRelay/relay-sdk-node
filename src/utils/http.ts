@@ -8,6 +8,8 @@ import * as crypto from 'crypto';
 import { ApiError, NetworkError } from '../errors';
 import type { WebhookSignatureVerification } from '../types';
 
+const NON_RETRYABLE_ERROR_CODES = new Set(['TEST_QUOTA_EXCEEDED', 'TEST_CONCURRENCY_EXCEEDED']);
+
 /**
  * HTTP client configuration options
  */
@@ -256,6 +258,10 @@ export class HttpClient {
    * Check if error is retryable
    */
   private isRetryable(error: ApiError): boolean {
+    // Test-mode quota 429s last minutes to hours; backoff retries cannot succeed, so surface them.
+    if (NON_RETRYABLE_ERROR_CODES.has(error.code)) {
+      return false;
+    }
     return this.options.retry.retryableStatusCodes.includes(error.statusCode);
   }
 
