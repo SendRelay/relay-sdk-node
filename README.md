@@ -171,26 +171,28 @@ for await (const t of relay.tasks.listAll({ limit: 20 })) {
 }
 
 // Get
-const one = await relay.tasks.get(created.task.taskId);
+const one = await relay.tasks.get(created.task.id);
 
 // Cancel
-await relay.tasks.cancel(created.task.taskId, { reason: 'Customer request' });
+await relay.tasks.cancel(created.task.id, { reason: 'Customer request' });
 
-// Assign manually
-await relay.tasks.assign(created.task.taskId, { riderId: 'rider-uuid' });
+// Assign manually: offer to up to `maxAssignableRiders` nearby riders; the first to accept gets it
+const nearby = await relay.tasks.availableRiders(created.task.id, { tier: 1 });
+await relay.tasks.assign(created.task.id, {
+  riderIds: nearby.riders.slice(0, nearby.maxAssignableRiders).map((r) => r.riderId),
+  offerTimeoutSeconds: 60,
+});
 
 // Rate
-await relay.tasks.rate(created.task.taskId, { rating: 5, comment: 'Great service' });
+await relay.tasks.rate(created.task.id, { rating: 5, comment: 'Great service' });
 
 // Dispute
-await relay.tasks.dispute(created.task.taskId, {
+await relay.tasks.dispute(created.task.id, {
   reason: 'DAMAGED_ITEMS',
   description: 'Package arrived damaged',
   evidence: ['https://example.com/photo.jpg'],
 });
 
-// Nearby riders
-const nearby = await relay.tasks.availableRiders(created.task.taskId, { tier: 1 });
 ```
 
 ## Webhooks API

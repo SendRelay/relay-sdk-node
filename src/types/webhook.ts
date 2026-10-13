@@ -98,6 +98,8 @@ export interface CreateWebhookRequest {
  * Request to update a webhook
  */
 export interface UpdateWebhookRequest {
+	/** New endpoint URL (must be reachable) */
+	url?: string;
 	/** Updated event types */
 	events?: SubscribableWebhookEventType[];
 	/** Updated description */
@@ -113,7 +115,7 @@ export interface ListWebhooksResponse {
 	/** Whether there are more results */
 	hasMore: boolean;
 	/** Pagination cursor */
-	cursor?: string;
+	cursor: string | null;
 }
 
 /**

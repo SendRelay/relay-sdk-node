@@ -36,4 +36,35 @@ describe('Tasks resource', () => {
       headers: { 'Idempotency-Key': 'order_123' },
     });
   });
+
+  it('offers a manual assignment to the riders given', async () => {
+    const http = { post: vi.fn().mockResolvedValue({ status: 'PENDING' }) };
+
+    await new Tasks(http as any).assign('task_1', {
+      riderIds: ['rider_a', 'rider_b'],
+      offerTimeoutSeconds: 90,
+    });
+
+    expect(http.post).toHaveBeenCalledWith('/sdk/tasks/task_1/assign', {
+      riderIds: ['rider_a', 'rider_b'],
+      offerTimeoutSeconds: 90,
+    });
+  });
+
+  it('follows cursors across pages in listAll and stops on the last page', async () => {
+    const http = {
+      get: vi
+        .fn()
+        .mockResolvedValueOnce({ data: [{ id: 't1' }], hasMore: true, cursor: 'c1' })
+        .mockResolvedValueOnce({ data: [{ id: 't2' }], hasMore: false, cursor: null }),
+    };
+
+    const ids: string[] = [];
+    for await (const task of new Tasks(http as any).listAll({ limit: 1 })) ids.push(task.id);
+
+    expect(ids).toEqual(['t1', 't2']);
+    expect(http.get).toHaveBeenNthCalledWith(2, '/sdk/tasks', {
+      params: { limit: 1, cursor: 'c1' },
+    });
+  });
 });

@@ -57,7 +57,7 @@ export type Size = 'ENVELOPE' | 'BOX' | 'LARGE_BOX' | 'FREIGHT';
 /**
  * Vehicle type for delivery preferences
  */
-export type VehicleType = 'BICYCLE' | 'MOTORCYCLE' | 'TRICYCLE' | 'CAR' | 'TRUCK';
+export type VehicleType = 'BICYCLE' | 'BIKE' | 'MOTORCYCLE' | 'TRICYCLE' | 'CAR' | 'VAN' | 'TRUCK';
 
 /**
  * Payment status for a task
@@ -136,15 +136,15 @@ export interface Stage {
  */
 export interface Preferences {
   /** Minimum rider rating (1-5) */
-  minRating?: number | null;
+  minRating?: number;
   /** Requires insulated box */
-  hasBox?: boolean | null;
+  hasBox?: boolean;
   /** Requires refrigeration */
-  hasRefrigeration?: boolean | null;
+  hasRefrigeration?: boolean;
   /** Requires air conditioning */
-  hasAirConditioning?: boolean | null;
+  hasAirConditioning?: boolean;
   /** Allowed vehicle types */
-  vehicleType?: VehicleType[] | null;
+  vehicleType?: VehicleType[];
   /** Better Auth fleet organisation IDs; empty means unrestricted. Independents remain eligible by default. */
   allowedOrganisations?: string[];
   /** Any blocked fleet membership excludes the rider, including riders in allowed fleets. */
@@ -247,6 +247,27 @@ export interface Task {
   cancelledAt: ISOTimestamp | null;
   /** Failure reason */
   failureReason: string | null;
+  /** Open dispute ID, if one was raised */
+  disputeId: string | null;
+  /** Road-network routing snapshot used for pricing */
+  routing: TaskRouting | null;
+  /** Encoded route polyline */
+  routePolyline: string | null;
+}
+
+/**
+ * Road-network routing snapshot captured when the task was priced
+ */
+export interface TaskRouting {
+  provider: 'GOOGLE_ROUTES';
+  pricingBasis: 'ROAD_NETWORK';
+  generatedAt: ISOTimestamp;
+  distanceMeters: number;
+  durationSeconds: number;
+  durationInTrafficSeconds: number;
+  tollCostKobo: AmountInKobo;
+  stagesCount: number;
+  routePolyline: string | null;
 }
 
 /**
@@ -255,35 +276,9 @@ export interface Task {
 export type TaskWithRider = Task & { rider: RiderSnippet };
 
 /**
- * Raw task entity shape returned by create/assign endpoints
+ * @deprecated Create and get now return the full {@link Task}; kept as an alias.
  */
-export interface TaskRecord {
-  id: UUID;
-  developerId: UUID;
-  riderId?: UUID | null;
-  externalId?: string | null;
-  status: TaskStatus;
-  taskType: TaskType;
-  priority: Priority;
-  autoAssign?: boolean;
-  stages: Stage[];
-  deliveryFee: AmountInKobo;
-  totalFee: AmountInKobo;
-  pricing: string;
-  paymentStatus?: PaymentStatus | null;
-  paymentMethod?: PaymentMethod;
-  createdAt: ISOTimestamp;
-  updatedAt: ISOTimestamp;
-  offeredAt?: ISOTimestamp;
-  acceptedAt?: ISOTimestamp;
-  assignedAt?: ISOTimestamp;
-  completedAt?: ISOTimestamp;
-  failedAt?: ISOTimestamp;
-  cancelledAt?: ISOTimestamp;
-  notes?: string;
-  idempotencyKey?: string;
-  [key: string]: unknown;
-}
+export type TaskRecord = Task;
 
 /**
  * Request to create a new task
@@ -335,6 +330,19 @@ export interface PricingBreakdown {
   platformFee: AmountInKobo;
   /** Priority fee in kobo */
   priorityFee: AmountInKobo;
+  /** Estimated toll cost in kobo */
+  tollFee?: AmountInKobo;
+  /** Surge multiplier applied, when surge pricing is active */
+  surgeMultiplier?: number;
+  /** Whether surge pricing was applied */
+  surgeActive?: boolean;
+  /** Road distance and duration the price is based on */
+  route?: {
+    distanceKm: number;
+    durationMinutes: number;
+  };
+  /** Further itemised fees (base, distance, time, insurance, …) in kobo */
+  [fee: string]: unknown;
 }
 
 /**
@@ -364,6 +372,12 @@ export interface CreateTaskResponse {
     outcome: string;
     expiresAt: string;
     warning: string;
+  };
+  /** How the task is being dispatched (live workflow or test simulation) */
+  orchestration?: {
+    type: string;
+    status: string;
+    note: string;
   };
 }
 
@@ -427,21 +441,25 @@ export interface ListTasksResponse {
   data: TaskListItem[];
   /** Whether there are more results */
   hasMore: boolean;
-  /** Cursor for next page */
-  cursor?: string;
+  /** Cursor for next page (null on the last page) */
+  cursor: string | null;
 }
 
 /**
  * Response from get task request
  */
-export type GetTaskResponse = { task: Task } | TaskWithRider;
+export interface GetTaskResponse {
+  task: Task;
+}
 
 /**
- * Request to manually assign a task to a rider
+ * Request to manually offer a task to specific riders (from `availableRiders`)
  */
 export interface ManualAssignRequest {
-  /** Rider ID to assign */
-  riderId: UUID;
+  /** Riders to offer the task to; the first to accept is assigned (max 5) */
+  riderIds: UUID[];
+  /** How long riders have to accept, in seconds (15–300, default 60) */
+  offerTimeoutSeconds?: number;
 }
 
 /**
@@ -450,9 +468,19 @@ export interface ManualAssignRequest {
 export interface ManualAssignResponse {
   message: string;
   taskId: UUID;
-  riderId: UUID;
-  status: 'OFFERED';
-  task: TaskRecord;
+  status: 'PENDING';
+  workflowInstanceId: string;
+  assignment: {
+    offerId: string;
+    submittedRiderIds: UUID[];
+    acceptedRiderIds: UUID[];
+    rejectedRiders: { riderId: UUID; reason: string }[];
+    requestedRiderCount: number;
+    acceptedRiderCount: number;
+    maxRiders: number;
+    truncated: boolean;
+    offerTimeoutSeconds: number;
+  };
 }
 
 /**
@@ -534,17 +562,24 @@ export interface AvailableRider {
   currentLocation: {
     latitude: number;
     longitude: number;
-    accuracy?: number | null;
-    bearing?: number | null;
-    speed?: number | null;
-    altitude?: number | null;
-    heading?: number | null;
-    updatedAt?: string | null;
+    accuracy?: number;
+    bearing?: number;
+    speed?: number;
   } | null;
   /** Rider vehicle details */
-  vehicle: RiderVehicleSummary | null;
+  vehicle: {
+    type: VehicleType | null;
+    plateNumber: string | null;
+    model: string | null;
+    year: number | null;
+    color: string | null;
+    hasRefrigeration: boolean | null;
+    hasBox: boolean | null;
+  } | null;
   /** Rider rating */
   rating: RiderRatingSummary;
+  /** Not currently provided; always null */
+  performance: null;
 }
 
 /**
@@ -558,4 +593,11 @@ export interface AvailableRidersRequest {
 /**
  * Response with available riders
  */
-export type AvailableRidersResponse = AvailableRider[];
+export interface AvailableRidersResponse {
+  taskId: UUID;
+  tier: number;
+  /** How many riders a single `assign` call may include */
+  maxAssignableRiders: number;
+  /** Nearest eligible riders first, at most 20 */
+  riders: AvailableRider[];
+}

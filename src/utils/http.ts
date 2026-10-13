@@ -138,7 +138,9 @@ export class HttpClient {
           this.log('debug', `${method} ${url} succeeded`, {
             status: response.status,
           });
-          return result.data || result;
+          // Responses are the DTO itself (never wrapped), so return them as-is.
+          // Paginated lists carry their own `data` / `hasMore` / `cursor`.
+          return result as T;
         }
 
         // Error response
@@ -351,7 +353,9 @@ export class HttpClient {
         .digest('hex');
 
       // Constant-time comparison
-      if (signature !== expectedSignature) {
+      const received = Buffer.from(signature ?? '', 'utf8');
+      const expected = Buffer.from(expectedSignature, 'utf8');
+      if (received.length !== expected.length || !crypto.timingSafeEqual(received, expected)) {
         return { valid: false, error: 'Signature verification failed' };
       }
 

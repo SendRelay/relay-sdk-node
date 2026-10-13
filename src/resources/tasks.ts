@@ -174,7 +174,7 @@ export class Tasks {
         yield task;
       }
 
-      cursor = response.hasMore ? response.cursor : undefined;
+      cursor = response.hasMore ? (response.cursor ?? undefined) : undefined;
     } while (cursor);
   }
 
