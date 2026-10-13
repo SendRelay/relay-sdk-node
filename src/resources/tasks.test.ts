@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Tasks } from './tasks';
+import type { TaskQuoteRequest } from '../types/task';
 
 describe('Tasks resource', () => {
   it('posts quote payload to /tasks/quote', async () => {
@@ -8,12 +9,17 @@ describe('Tasks resource', () => {
     };
 
     const tasks = new Tasks(http as any);
-    const payload = {
+    const payload: TaskQuoteRequest = {
       taskType: 'FOOD_DELIVERY',
       stages: [],
+      preferences: {
+        minRating: 4, hasBox: true, hasRefrigeration: true, hasAirConditioning: true,
+        vehicleType: ['CAR'], allowedOrganisations: ['fleet-a'],
+        blockedOrganisations: ['fleet-b'], allowIndependentRiders: false,
+      },
     };
 
-    await tasks.quote(payload as any);
+    await tasks.quote(payload);
 
     expect(http.post).toHaveBeenCalledWith('/sdk/tasks/quote', payload);
   });

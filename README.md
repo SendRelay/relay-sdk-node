@@ -118,6 +118,11 @@ Notes:
 
 Quotes use `POST /v1/sdk/tasks/quote`; task creation uses `POST /v1/sdk/tasks`. See the [quote guide](https://docs.sendrelay.com.ng/getting-started/quotes-and-delayed-commit) and [error reference](https://docs.sendrelay.com.ng/reference/errors).
 
+Both methods accept `preferences` (vehicle, equipment, rating, and fleet requirements).
+Send the same preferences, including vehicle array order, when creating with `quoteId`;
+changes return `QUOTE_PAYLOAD_MISMATCH` and require a new quote. A quote locks pricing,
+but does not reserve a rider. `hasBox` requires a delivery box, not verified insulation.
+
 ```ts
 // Quote
 const quote = await relay.tasks.quote({

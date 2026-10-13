@@ -137,7 +137,7 @@ export interface Stage {
 export interface Preferences {
   /** Minimum rider rating (1-5) */
   minRating?: number;
-  /** Requires insulated box */
+  /** Requires a delivery box; does not guarantee insulation */
   hasBox?: boolean;
   /** Requires refrigeration */
   hasRefrigeration?: boolean;
@@ -384,14 +384,10 @@ export interface CreateTaskResponse {
 /**
  * Request to get pricing quote
  */
-export interface TaskQuoteRequest {
-  /** Task type */
-  taskType: TaskType;
-  /** Priority (default: STANDARD) */
-  priority?: Priority;
-  /** Task stages */
-  stages: Stage[];
-}
+export type TaskQuoteRequest = Pick<
+  CreateTaskRequest,
+  'taskType' | 'priority' | 'stages' | 'preferences'
+>;
 
 /**
  * Response from pricing quote request
