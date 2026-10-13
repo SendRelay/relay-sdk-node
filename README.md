@@ -327,7 +327,7 @@ Errors are `ApiError` with `statusCode`, `code`, `message` and `details`. Valida
 | 429 | `TEST_QUOTA_EXCEEDED` / `TEST_CONCURRENCY_EXCEEDED` | Test-mode simulation limit reached | Not retried. Wait, or submit your profile / get verified to raise the limit |
 | 400 | `BAD_REQUEST` | `Idempotency-Key` missing on `tasks.create` | Pass `{ idempotencyKey }` as the second argument (the SDK does not generate one) |
 | 422 | `VALIDATION_ERROR` | Payload failed validation | Read the `details` array |
-| 404 / 409 | `QUOTE_NOT_FOUND` / `QUOTE_EXPIRED` / `QUOTE_CONSUMED` | Unknown/other-account, expired or already used quote | Request a new quote |
+| 404 / 409 | `QUOTE_NOT_FOUND` / `QUOTE_EXPIRED` / `QUOTE_CONSUMED` | Unknown/other-account/other-mode, legacy without a mode, expired or already used quote | Request a new quote |
 | 422 | `QUOTE_PAYLOAD_MISMATCH` | Create payload differs from the quoted one | Send the same payload you quoted |
 | 409 | `INSUFFICIENT_WALLET_BALANCE` | Wallet lower than task total (amounts in kobo) | Top up under Wallet |
 
