@@ -38,17 +38,10 @@ describe('Webhooks resource', () => {
     expect(http.delete).toHaveBeenCalledWith('/sdk/webhooks/wh_123', undefined);
   });
 
-  it('can still send a dashboard developer token override', async () => {
-    const http = {
-      get: vi.fn().mockResolvedValue({ data: [] }),
-    };
-    const webhooks = new Webhooks(http as any);
-
-    await webhooks.list({ developerToken: 'developer-jwt' });
-
-    expect(http.get).toHaveBeenCalledWith('/sdk/webhooks', {
-      headers: { Authorization: 'Bearer developer-jwt' },
-    });
+  it('ignores the legacy developer token option', async () => {
+    const http = { get: vi.fn().mockResolvedValue({ data: [] }) };
+    await new Webhooks(http as any).list({ developerToken: 'legacy-token' });
+    expect(http.get).toHaveBeenCalledWith('/sdk/webhooks', undefined);
   });
 
   it('sends every CRUD request to the SDK route with X-Relay-Key and no developer token', async () => {

@@ -12,23 +12,13 @@ import type {
   Webhook,
   WebhookSignatureVerification,
 } from '../types';
-import type { HttpClient, RequestConfig } from '../utils/http';
+import type { HttpClient } from '../utils/http';
 
 /**
  * Webhooks resource providing webhook management operations
  */
 export class Webhooks {
   constructor(private readonly http: HttpClient) {}
-
-  private withDeveloperAuth(developerToken?: string): RequestConfig | undefined {
-    if (!developerToken) return undefined;
-
-    const token = developerToken.startsWith('Bearer ')
-      ? developerToken
-      : `Bearer ${developerToken}`;
-
-    return { headers: { Authorization: token } };
-  }
 
   /**
    * Register a new webhook endpoint
@@ -56,19 +46,19 @@ export class Webhooks {
    */
   async create(
     request: CreateWebhookRequest,
-    options?: { developerToken?: string },
+    /** @deprecated SDK webhooks use the API key; this option is ignored. */
+    _options?: { developerToken?: string },
   ): Promise<CreateWebhookResponse> {
     return this.http.post<CreateWebhookResponse>(
       '/sdk/webhooks',
       request,
-      this.withDeveloperAuth(options?.developerToken),
+      undefined,
     );
   }
 
   /**
    * List all webhooks
    *
-   * @param options - Optional dashboard developer token override
    * @returns Paginated list of webhooks
    *
    * @example
@@ -79,10 +69,10 @@ export class Webhooks {
    * }
    * ```
    */
-  async list(options?: { developerToken?: string }): Promise<ListWebhooksResponse> {
+  async list(_options?: { developerToken?: string }): Promise<ListWebhooksResponse> {
     return this.http.get<ListWebhooksResponse>(
       '/sdk/webhooks',
-      this.withDeveloperAuth(options?.developerToken),
+      undefined,
     );
   }
 
@@ -90,7 +80,6 @@ export class Webhooks {
    * Get webhook by ID
    *
    * @param webhookId - Webhook ID
-   * @param options - Optional dashboard developer token override
    * @returns Webhook details (without secret)
    *
    * @example
@@ -100,10 +89,10 @@ export class Webhooks {
    * console.log('Last used:', webhook.usage.lastUsed);
    * ```
    */
-  async get(webhookId: string, options?: { developerToken?: string }): Promise<Webhook> {
+  async get(webhookId: string, _options?: { developerToken?: string }): Promise<Webhook> {
     return this.http.get<Webhook>(
       `/sdk/webhooks/${webhookId}`,
-      this.withDeveloperAuth(options?.developerToken),
+      undefined,
     );
   }
 
@@ -112,7 +101,6 @@ export class Webhooks {
    *
    * @param webhookId - Webhook ID
    * @param request - Update details
-   * @param options - Optional dashboard developer token override
    * @returns Updated webhook
    *
    * @example
@@ -130,12 +118,13 @@ export class Webhooks {
   async update(
     webhookId: string,
     request: UpdateWebhookRequest,
-    options?: { developerToken?: string },
+    /** @deprecated SDK webhooks use the API key; this option is ignored. */
+    _options?: { developerToken?: string },
   ): Promise<Webhook> {
     return this.http.put<Webhook>(
       `/sdk/webhooks/${webhookId}`,
       request,
-      this.withDeveloperAuth(options?.developerToken),
+      undefined,
     );
   }
 
@@ -143,17 +132,16 @@ export class Webhooks {
    * Delete webhook
    *
    * @param webhookId - Webhook ID
-   * @param options - Optional dashboard developer token override
    *
    * @example
    * ```typescript
    * await relay.webhooks.delete('webhook-123');
    * ```
    */
-  async delete(webhookId: string, options?: { developerToken?: string }): Promise<Webhook> {
+  async delete(webhookId: string, _options?: { developerToken?: string }): Promise<Webhook> {
     return this.http.delete<Webhook>(
       `/sdk/webhooks/${webhookId}`,
-      this.withDeveloperAuth(options?.developerToken),
+      undefined,
     );
   }
 
