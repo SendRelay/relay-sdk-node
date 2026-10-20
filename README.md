@@ -131,6 +131,8 @@ other tasks, for both pricing and dispatch. Existing quotes keep their original
 validation rules until expiry; preserve their original vehicle order.
 
 ```ts
+// Quote and create with the same developer account and test/live API-key mode.
+// Key rotation within that account and mode is allowed.
 // Quote
 const quote = await relay.tasks.quote({
   taskType: 'PACKAGE_DELIVERY',
@@ -334,7 +336,9 @@ Errors are `ApiError` with `statusCode`, `code`, `message` and `details`. Valida
 | 429 | `TEST_QUOTA_EXCEEDED` / `TEST_CONCURRENCY_EXCEEDED` | Test-mode simulation limit reached | Not retried. Wait, or submit your profile / get verified to raise the limit |
 | 400 | `BAD_REQUEST` | `Idempotency-Key` missing on `tasks.create` | Pass `{ idempotencyKey }` as the second argument (the SDK does not generate one) |
 | 422 | `VALIDATION_ERROR` | Payload failed validation | Read the `details` array |
-| 404 / 409 | `QUOTE_NOT_FOUND` / `QUOTE_EXPIRED` / `QUOTE_CONSUMED` | Unknown/other-account/other-mode, legacy without a mode, expired or already used quote | Request a new quote |
+| 404 / 409 | `QUOTE_NOT_FOUND` / `QUOTE_EXPIRED` / `QUOTE_CONSUMED` | Unknown/other-account/opposite-mode, expired or already used quote | Request a new quote |
+| 409 | `QUOTE_MODE_UNKNOWN` / `QUOTE_UNAVAILABLE` | Legacy unknown mode or concurrent quote consumption | Request a fresh quote in the create mode; retry an existing task with its original key and mode |
+| 409 | `IDEMPOTENCY_MODE_MISMATCH` | Key belongs to a task in another mode | Retry with original mode, or use a new key for a separate task |
 | 422 | `QUOTE_PAYLOAD_MISMATCH` | Create payload differs from the quoted one | Send the same payload you quoted |
 | 409 | `INSUFFICIENT_WALLET_BALANCE` | Wallet lower than task total (amounts in kobo) | Top up under Wallet |
 
@@ -355,6 +359,8 @@ const totalNaira = (totalKobo / 100).toFixed(2); // "5756.63"
 ## License
 
 MIT
+
+Concurrent same-mode creates may return `409 TASK_CREATION_IN_PROGRESS`. Retry with the same key after the first request completes. If it persists after an interrupted request, contact support for reconciliation; do not switch keys while the payment outcome is uncertain. Opposite-mode requests reject before payment effects.
 
 ## Reduced dev configuration
 
