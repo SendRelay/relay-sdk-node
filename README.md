@@ -209,7 +209,7 @@ await relay.tasks.dispute(created.task.id, {
 
 ## Webhooks API
 
-Webhook management calls use `X-Relay-Key` on `/v1/sdk/webhooks`. Test-mode webhooks can be created, updated, and deleted from sign-up, before business approval. Live-mode webhooks require completed onboarding and a `VERIFIED` business profile. The signed-in dashboard uses `/v1/developer/webhooks`; inbound payment provider callbacks use `/v1/webhooks/stripe` and `/v1/webhooks/flutterwave`. A developer JWT alone does not authorize SDK webhook CRUD. To try a receiver before exposing it publicly, use the [local signed receiver fixture](../../../apps/docs/static/examples/webhook-local-fixture.mjs); its events are locally generated, not delivered by Relay.
+Webhook management calls use `X-Relay-Key` on `/v1/sdk/webhooks`; the key needs the `task:*` permission. Test-mode webhooks can be created, updated, and deleted from sign-up, before business approval. Live-mode webhooks require completed onboarding and a `VERIFIED` business profile. The signed-in dashboard uses `/v1/developer/webhooks`; inbound payment provider callbacks use `/v1/webhooks/flutterwave`. A developer JWT alone does not authorize SDK webhook CRUD. To try a receiver before exposing it publicly, use the [local signed receiver fixture](../../../apps/docs/static/examples/webhook-local-fixture.mjs); its events are locally generated, not delivered by Relay.
 
 Registration fails with `409` if you already have a webhook in that `mode` (delete it first) or hit the webhook limit, and with `400` if the URL is not public HTTPS or does not return `2xx` to Relay's verification request.
 
