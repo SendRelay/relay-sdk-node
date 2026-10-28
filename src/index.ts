@@ -113,6 +113,7 @@ export type {
 	CancelTaskResponse,
 	RatingRequest,
 	SubmitRatingResponse,
+	TaskLiveEta,
 	TaskRating,
 	DisputeRequest,
 	DisputeTaskResponse,

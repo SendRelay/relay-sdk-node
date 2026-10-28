@@ -493,6 +493,27 @@ export interface GetTaskResponse {
    * once, so check this before calling `relay.tasks.rate()`.
    */
   rating: TaskRating | null;
+  /**
+   * The rider's live ETA to their next stop, from the road route they are navigating and live
+   * traffic. Null when no rider is on the way, or the rider's app hasn't reported one yet.
+   */
+  liveEta: TaskLiveEta | null;
+}
+
+/**
+ * How far the rider is from the stop they are heading to
+ */
+export interface TaskLiveEta {
+  /** Index of the stage the rider is heading to */
+  stageIndex: number;
+  /** Driving time left when the rider last reported, in seconds */
+  seconds: number;
+  /** Road distance left when the rider last reported, in metres */
+  meters: number;
+  /** When the rider is expected at the stop (ISO 8601) */
+  arrivesAt: string;
+  /** When the rider last reported this (ISO 8601) */
+  updatedAt: string;
 }
 
 /**
