@@ -488,6 +488,23 @@ export interface ListTasksResponse {
  */
 export interface GetTaskResponse {
   task: Task;
+  /**
+   * Your rating of this task's rider, or `null` if you haven't rated it. Each task can be rated
+   * once, so check this before calling `relay.tasks.rate()`.
+   */
+  rating: TaskRating | null;
+}
+
+/**
+ * Your rating of a completed task's rider
+ */
+export interface TaskRating {
+  /** Rating (1-5) */
+  rating: number;
+  /** Your comment, if you left one */
+  comment: string | null;
+  /** When the rating was submitted (ISO 8601) */
+  createdAt: string;
 }
 
 /**

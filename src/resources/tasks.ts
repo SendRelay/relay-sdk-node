@@ -186,11 +186,10 @@ export class Tasks {
    *
    * @example
    * ```typescript
-   * const task = await relay.tasks.get('task-123');
-   * if ('task' in task) {
-   *   console.log(task.task.status, task.task.riderId);
-   * } else {
-   *   console.log(task.status, task.rider.id);
+   * const { task, rating } = await relay.tasks.get('task-123');
+   * console.log(task.status, task.riderId);
+   * if (task.status === 'COMPLETED' && !rating) {
+   *   await relay.tasks.rate(task.id, { rating: 5 });
    * }
    * ```
    */

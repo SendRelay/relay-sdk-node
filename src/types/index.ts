@@ -53,6 +53,7 @@ export type {
 	CancelTaskResponse,
 	RatingRequest,
 	SubmitRatingResponse,
+	TaskRating,
 	DisputeRequest,
 	DisputeTaskResponse,
 	AvailableRider,
