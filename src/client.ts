@@ -6,6 +6,7 @@
 
 import { ValidationError } from './errors';
 import { Auth } from './resources/auth';
+import { Presence } from './resources/presence';
 import { Tasks } from './resources/tasks';
 import { Webhooks } from './resources/webhooks';
 import { HttpClient, type HttpClientOptions } from './utils/http';
@@ -143,6 +144,14 @@ export class RelayClient {
    */
   public readonly auth: Auth;
 
+  /**
+   * Presence resource namespace
+   *
+   * Anonymous rider availability around a point, for maps shown before creating a task:
+   * - get
+   */
+  public readonly presence: Presence;
+
   constructor(options: RelayClientOptions) {
     // Validate API key
     if (!options.apiKey) {
@@ -181,6 +190,7 @@ export class RelayClient {
     this.tasks = new Tasks(this.http);
     this.webhooks = new Webhooks(this.http);
     this.auth = new Auth(this.http);
+    this.presence = new Presence(this.http);
   }
 
   /**

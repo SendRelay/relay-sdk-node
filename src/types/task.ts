@@ -253,7 +253,40 @@ export interface Task {
   routing: TaskRouting | null;
   /** Encoded route polyline */
   routePolyline: string | null;
+  /** True when the rider must enter the customer's completion code at the final drop-off */
+  completionCodeRequired: boolean;
+  /** Digits in the completion code (4 or 6), or null when the task has none */
+  completionCodeLength: 4 | 6 | null;
+  /**
+   * The completion code itself. Returned on create and get (never in list items), and never
+   * sent to the rider. Null when the task was created without one.
+   */
+  completionCode?: TaskCompletionCode | null;
 }
+
+/**
+ * Proof-of-delivery code for a task. Give `code` to your customer; the rider can only complete
+ * the final drop-off by entering it.
+ */
+export interface TaskCompletionCode {
+  /** The digits to share with your customer */
+  code: string;
+  length: 4 | 6;
+  /** `CUSTOM` when you supplied the code, `GENERATED` when Relay generated it */
+  source: 'CUSTOM' | 'GENERATED';
+  /** `LOCKED` while entry is paused after five wrong attempts (for 15 minutes) */
+  status: 'PENDING' | 'VERIFIED' | 'LOCKED';
+  /** Wrong entries so far */
+  failedAttempts: number;
+  lockedUntil: ISOTimestamp | null;
+  verifiedAt: ISOTimestamp | null;
+}
+
+/**
+ * Ask for a completion code when creating a task: supply your own 4 or 6 digits, or let Relay
+ * generate one (6 digits by default). Omit it and the task completes without a code.
+ */
+export type CompletionCodeRequest = { code: string } | { length?: 4 | 6 };
 
 /**
  * Road-network routing snapshot captured when the task was priced
@@ -304,6 +337,11 @@ export interface CreateTaskRequest {
   idempotencyKey?: string;
   /** Task preferences */
   preferences?: Preferences;
+  /**
+   * Opt-in proof of delivery: the rider must enter this code to complete the final drop-off.
+   * `{ code: '4821' }` uses your own code; `{ length: 4 }` or `{}` has Relay generate one.
+   */
+  completionCode?: CompletionCodeRequest;
   /** Test-mode simulation outcome */
   simulationOutcome?:
     | 'SUCCESS'
@@ -429,6 +467,8 @@ export interface TaskListItem {
   deliveryFee: AmountInKobo;
   totalFee: AmountInKobo;
   createdAt: ISOTimestamp;
+  completionCodeRequired?: boolean;
+  completionCodeLength?: 4 | 6 | null;
 }
 
 /**
@@ -547,37 +587,25 @@ export interface DisputeTaskResponse {
 }
 
 /**
- * Available rider information
+ * A rider you may offer a manual task to. Coordinates, photo and plate number are not shared
+ * until the rider is assigned; then they appear on the task.
  */
 export interface AvailableRider {
-  /** Rider ID */
+  /** Rider ID, accepted by `tasks.assign` */
   riderId: UUID;
   /** Rider first name */
   firstName: string;
-  /** Rider profile photo */
-  photo: string | null;
-  /** Rider location */
-  currentLocation: {
-    latitude: number;
-    longitude: number;
-    accuracy?: number;
-    bearing?: number;
-    speed?: number;
-  } | null;
-  /** Rider vehicle details */
+  /** Straight-line distance to the pickup, rounded to 0.1 km */
+  distanceKm: number;
+  /** Vehicle type and capabilities */
   vehicle: {
     type: VehicleType | null;
-    plateNumber: string | null;
-    model: string | null;
-    year: number | null;
-    color: string | null;
     hasRefrigeration: boolean | null;
     hasBox: boolean | null;
+    hasAirConditioning: boolean | null;
   } | null;
   /** Rider rating */
   rating: RiderRatingSummary;
-  /** Not currently provided; always null */
-  performance: null;
 }
 
 /**

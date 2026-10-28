@@ -58,7 +58,19 @@ export type {
 	AvailableRider,
 	AvailableRidersRequest,
 	AvailableRidersResponse,
+	TaskCompletionCode,
+	CompletionCodeRequest,
 } from './task';
+
+// Presence types
+export type {
+	PresenceResolution,
+	PresenceDensity,
+	PresencePoint,
+	PresenceCell,
+	PresenceRequest,
+	PresenceResponse,
+} from './presence';
 
 // Webhook types
 export type {

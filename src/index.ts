@@ -118,6 +118,15 @@ export type {
 	AvailableRider,
 	AvailableRidersRequest,
 	AvailableRidersResponse,
+	TaskCompletionCode,
+	CompletionCodeRequest,
+	// Presence types
+	PresenceResolution,
+	PresenceDensity,
+	PresencePoint,
+	PresenceCell,
+	PresenceRequest,
+	PresenceResponse,
 	// Webhook types
 	SubscribableWebhookEventType,
 	VerificationWebhookEventType,
