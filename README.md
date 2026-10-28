@@ -5,24 +5,9 @@
 
 Official server SDK for Relay.
 
-This package is for backend/server environments only. It uses your Relay API key and should never run in browsers or mobile apps.
+This package is for backend/server environments only. It uses your Relay API key and should never run in browsers or mobile apps. For live tracking in apps, use [`@relay-sdk/sdk-browser`](https://www.npmjs.com/package/@relay-sdk/sdk-browser) or [`relay_flutter`](https://pub.dev/packages/relay_flutter) with tracking tokens minted by this SDK.
 
-## Local HTTP integration check
-
-With the local Worker running, inspect the HTTP preflight without sending credentials:
-
-```bash
-curl -i -X OPTIONS http://localhost:8787/v1/sdk/tasks \
-  -H 'Origin: http://localhost:3000' \
-  -H 'Access-Control-Request-Method: POST' \
-  -H 'Access-Control-Request-Headers: Authorization, Content-Type, x-relay-key'
-```
-
-Expect status `204`, wildcard allowed Origin, `Vary: Access-Control-Request-Headers`,
-and `Authorization,Content-Type,x-relay-key` in allowed headers. The Hono default
-method list includes `QUERY`; use the documented method for each Relay endpoint.
-A successful preflight does not authorize an API request. This server SDK does not
-perform browser preflights; keep API keys on the backend.
+📖 **Full documentation:** [docs.sendrelay.com.ng](https://docs.sendrelay.com.ng) · [Quickstart](https://docs.sendrelay.com.ng/getting-started) · [SDK reference](https://docs.sendrelay.com.ng/sdks/node-sdk)
 
 ## Install
 
@@ -48,39 +33,43 @@ const relay = new RelayClient({
   apiKey: process.env.RELAY_API_KEY!,
 });
 
-const result = await relay.tasks.create({
-  taskType: 'PACKAGE_DELIVERY',
-  stages: [
-    {
-      type: 'PICKUP',
-      location: {
-        latitude: 6.5244,
-        longitude: 3.3792,
-        address: 'Pickup address',
-      },
-      instructions: 'Call on arrival',
-      items: [
-        {
-          name: 'Parcel',
-          estimatedValue: 200000,
-          estimatedWeight: 'STANDARD',
-          estimatedSize: 'BOX',
+const result = await relay.tasks.create(
+  {
+    taskType: 'PACKAGE_DELIVERY',
+    stages: [
+      {
+        type: 'PICKUP',
+        location: {
+          latitude: 6.5244,
+          longitude: 3.3792,
+          address: 'Pickup address',
         },
-      ],
-    },
-    {
-      type: 'DROPOFF',
-      location: {
-        latitude: 6.4281,
-        longitude: 3.4219,
-        address: 'Dropoff address',
+        instructions: 'Call on arrival',
+        items: [
+          {
+            name: 'Parcel',
+            estimatedValue: 200000,
+            estimatedWeight: 'STANDARD',
+            estimatedSize: 'BOX',
+          },
+        ],
       },
-      instructions: 'Drop with security',
-    },
-  ],
-});
+      {
+        type: 'DROPOFF',
+        location: {
+          latitude: 6.4281,
+          longitude: 3.4219,
+          address: 'Dropoff address',
+        },
+        instructions: 'Drop with security',
+      },
+    ],
+  },
+  // Derive the key from your order so retries never create a second delivery.
+  { idempotencyKey: 'order-1001-delivery-1' },
+);
 
-console.log(result.task.taskId, result.task.status, result.task.totalFee);
+console.log(result.task.id, result.task.status, result.pricing.total); // amounts in kobo
 ```
 
 ## Client Configuration
@@ -209,11 +198,33 @@ await relay.tasks.dispute(created.task.id, {
 
 ```
 
+## Completion codes
+
+Require the customer's code before the rider can complete the final drop-off. Pass `{}` (Relay generates 6 digits), `{ length: 4 }`, or `{ code: '4821' }`:
+
+```ts
+const { task } = await relay.tasks.create({ ...body, completionCode: { length: 4 } }, { idempotencyKey: 'order-1001-delivery-1' });
+task.completionCode?.code; // give this to your customer; the rider never receives it
+```
+
+`task.status.completed` webhooks then include `completionCodeVerified: true`. See [Completion codes](https://docs.sendrelay.com.ng/tasks/completion-codes).
+
+## Presence map
+
+Anonymous rider supply around a point, for "riders nearby" maps before checkout:
+
+```ts
+const presence = await relay.presence.get({ latitude: 6.5244, longitude: 3.3792, resolution: 'BLOCK' });
+presence.cells; // [{ cellId, boundary, density: 'LOW' | 'MEDIUM' | 'HIGH', vehicleTypes }]
+```
+
+Snapshots are cached for `presence.refreshAfterSeconds` (30 s). Test keys get simulated riders. See [Rider presence map](https://docs.sendrelay.com.ng/riders/presence-map).
+
 ## Webhooks API
 
-Webhook management calls use `X-Relay-Key` on `/v1/sdk/webhooks`; the key needs the `task:*` permission. Test-mode webhooks can be created, updated, and deleted from sign-up, before business approval. Live-mode webhooks require completed onboarding and a `VERIFIED` business profile. The signed-in dashboard uses `/v1/developer/webhooks`; inbound payment provider callbacks use `/v1/webhooks/flutterwave`. A developer JWT alone does not authorize SDK webhook CRUD. To try a receiver before exposing it publicly, use the [local signed receiver fixture](../../../apps/docs/static/examples/webhook-local-fixture.mjs); its events are locally generated, not delivered by Relay.
+Webhook management calls use `X-Relay-Key` on `/v1/sdk/webhooks`; the key needs the `task:*` permission. Test-mode webhooks can be created, updated, and deleted from sign-up, before business approval. Live-mode webhooks require completed onboarding and a `VERIFIED` business profile. The signed-in dashboard uses `/v1/developer/webhooks`; inbound payment provider callbacks use `/v1/webhooks/flutterwave`. A developer JWT alone does not authorize SDK webhook CRUD. To try a receiver before exposing it publicly, use the [local signed receiver fixture](https://docs.sendrelay.com.ng/examples/webhook-local-fixture.mjs); its events are locally generated, not delivered by Relay.
 
-Registration fails with `409` if you already have a webhook in that `mode` (delete it first) or hit the webhook limit, and with `400` if the URL is not public HTTPS or does not return `2xx` to Relay's verification request.
+`mode` defaults to `'live'` and must match your key, so pass `mode: 'test'` with a test key (otherwise `403`). Registration fails with `409` if you already have a webhook in that `mode` (delete it first) or hit the webhook limit, and with `400` if the URL is not public HTTPS or does not return `2xx` to Relay's verification request.
 
 ```ts
 // Create
@@ -235,7 +246,7 @@ await relay.webhooks.update(webhook.id, {
 await relay.webhooks.delete(webhook.id);
 ```
 
-After registering a test endpoint with a `sk_test_...` key, create a test task with `simulationOutcome: 'SUCCESS'` to exercise matching test-mode lifecycle events. See the [simulation guide](../../../apps/docs/docs/simulation/index.md). The local fixture does not send Relay events.
+After registering a test endpoint with a `sk_test_...` key, create a test task with `simulationOutcome: 'SUCCESS'` to exercise matching test-mode lifecycle events. See the [simulation guide](https://docs.sendrelay.com.ng/simulation). The local fixture does not send Relay events.
 
 ### Verify Webhook Signature
 
@@ -339,6 +350,7 @@ Errors are `ApiError` with `statusCode`, `code`, `message` and `details`. Valida
 | 404 / 409 | `QUOTE_NOT_FOUND` / `QUOTE_EXPIRED` / `QUOTE_CONSUMED` | Unknown/other-account/opposite-mode, expired or already used quote | Request a new quote |
 | 409 | `QUOTE_MODE_UNKNOWN` / `QUOTE_UNAVAILABLE` | Legacy unknown mode or concurrent quote consumption | Request a fresh quote in the create mode; retry an existing task with its original key and mode |
 | 409 | `IDEMPOTENCY_MODE_MISMATCH` | Key belongs to a task in another mode | Retry with original mode, or use a new key for a separate task |
+| 409 | `TASK_CREATION_IN_PROGRESS` | A create with this key is still being processed | Retry with the **same** key. If it persists, contact support; don't switch keys while payment is uncertain |
 | 422 | `QUOTE_PAYLOAD_MISMATCH` | Create payload differs from the quoted one | Send the same payload you quoted |
 | 409 | `INSUFFICIENT_WALLET_BALANCE` | Wallet lower than task total (amounts in kobo) | Top up under Wallet |
 
@@ -360,9 +372,28 @@ const totalNaira = (totalKobo / 100).toFixed(2); // "5756.63"
 
 MIT
 
-Concurrent same-mode creates may return `409 TASK_CREATION_IN_PROGRESS`. Retry with the same key after the first request completes. If it persists after an interrupted request, contact support for reconciliation; do not switch keys while the payment outcome is uncertain. Opposite-mode requests reject before payment effects.
+## For Relay contributors
 
-## Reduced dev configuration
+These notes apply when running against a local or reduced development stage of the Relay API, not to normal integrations.
+
+### Local HTTP integration check
+
+With the local Worker running, inspect the HTTP preflight without sending credentials:
+
+```bash
+curl -i -X OPTIONS http://localhost:8787/v1/sdk/tasks \
+  -H 'Origin: http://localhost:3000' \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: Authorization, Content-Type, x-relay-key'
+```
+
+Expect status `204`, wildcard allowed Origin, `Vary: Access-Control-Request-Headers`,
+and `Authorization,Content-Type,x-relay-key` in allowed headers. The Hono default
+method list includes `QUERY`; use the documented method for each Relay endpoint.
+A successful preflight does not authorize an API request. This server SDK does not
+perform browser preflights; keep API keys on the backend.
+
+### Reduced dev configuration
 
 The reduced `dev` stage supports approved test-mode simulation, with provider
 integrations held. Point the SDK at the operator-supplied dev URL and use an
