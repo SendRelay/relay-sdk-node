@@ -4,4 +4,4 @@
 
 - Sends its real version in `User-Agent` (it always said 1.0.0).
 - Runs the shared SDK conformance suite.
-- From this release every Relay SDK shares one version.
+- From this release the Relay server SDKs share one version.
