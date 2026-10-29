@@ -6,6 +6,7 @@
 
 import * as crypto from 'crypto';
 import { ApiError, NetworkError } from '../errors';
+import { SDK_VERSION } from '../version';
 import type { WebhookSignatureVerification } from '../types';
 
 const NON_RETRYABLE_ERROR_CODES = new Set(['TEST_QUOTA_EXCEEDED', 'TEST_CONCURRENCY_EXCEEDED']);
@@ -234,7 +235,7 @@ export class HttpClient {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-Relay-Key': this.options.apiKey,
-      'User-Agent': `@relay-sdk/sdk-node/${this.getVersion()}`,
+      'User-Agent': `@relay-sdk/sdk-node/${SDK_VERSION}`,
       ...this.options.headers,
       ...config?.headers,
     };
@@ -309,12 +310,6 @@ export class HttpClient {
     }
   }
 
-  /**
-   * Get SDK version (read from package.json in real implementation)
-   */
-  private getVersion(): string {
-    return '1.0.0';
-  }
 
   /**
    * Verify webhook signature
