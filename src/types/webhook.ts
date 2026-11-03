@@ -15,6 +15,9 @@ export type SubscribableWebhookEventType =
 	| 'task.status.offered'
 	| 'task.status.assigned'
 	| 'task.status.in_progress'
+	| 'task.status.searching'
+	| 'task.dispatch.started'
+	| 'task.dispatch.riders_nearby'
 	| 'task.status.completed'
 	| 'task.status.failed'
 	| 'task.status.cancelled'
@@ -34,7 +37,11 @@ export type VerificationWebhookEventType = 'webhook.verification.test';
 /**
  * Any webhook event type that may be received by an endpoint.
  */
-export type WebhookEventType = SubscribableWebhookEventType | VerificationWebhookEventType;
+export type WebhookEventType =
+	| SubscribableWebhookEventType
+	| VerificationWebhookEventType
+	// Relay adds event types over time; acknowledge ones you do not handle with a 2xx.
+	| (string & {});
 
 /**
  * Webhook mode

@@ -41,6 +41,7 @@ const bindings: Record<string, Binding> = {
   'tasks.availableRiders': (r, i) => r.tasks.availableRiders(i.taskId!, i.query),
   'tasks.rate': (r, i) => r.tasks.rate(i.taskId!, i.body),
   'tasks.dispute': (r, i) => r.tasks.dispute(i.taskId!, i.body),
+  'tasks.simulateAdvance': (r, i) => r.tasks.simulateAdvance(i.taskId!),
   'webhooks.create': (r, i) => r.webhooks.create(i.body),
   'webhooks.list': (r) => r.webhooks.list(),
   'webhooks.get': (r, i) => r.webhooks.get(i.webhookId!),

@@ -14,6 +14,10 @@ export interface Location {
 	longitude: number;
 	/** Human-readable address (optional) */
 	address: string;
+	/** ISO 3166-1 alpha-2 country code, for example `NG` (optional; not used in pricing yet) */
+	countryCode?: string;
+	/** Postal code (optional; not used in pricing yet) */
+	postalCode?: string;
 }
 
 /**

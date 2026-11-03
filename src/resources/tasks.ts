@@ -18,6 +18,7 @@ import type {
   ListTasksResponse,
   ManualAssignRequest,
   ManualAssignResponse,
+  SimulateAdvanceResponse,
   RatingRequest,
   SubmitRatingResponse,
   TaskListItem,
@@ -236,6 +237,20 @@ export class Tasks {
    */
   async assign(taskId: string, request: ManualAssignRequest): Promise<ManualAssignResponse> {
     return this.http.post<ManualAssignResponse>(`/sdk/tasks/${taskId}/assign`, request);
+  }
+
+  /**
+   * Test keys only: open a SCHEDULED task's search now instead of at its `searchStartsAt`, so you
+   * can rehearse a booking without waiting for the pickup time.
+   *
+   * @example
+   * ```typescript
+   * const { task } = await relay.tasks.create({ ...request, dispatch: { strategy: 'SCHEDULED', pickupAt } });
+   * await relay.tasks.simulateAdvance(task.id);
+   * ```
+   */
+  async simulateAdvance(taskId: string): Promise<SimulateAdvanceResponse> {
+    return this.http.post<SimulateAdvanceResponse>(`/sdk/tasks/${taskId}/simulate/advance`);
   }
 
   /**

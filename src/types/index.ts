@@ -62,6 +62,10 @@ export type {
 	AvailableRidersResponse,
 	TaskCompletionCode,
 	CompletionCodeRequest,
+	DispatchStrategy,
+	DispatchRequest,
+	TaskDispatch,
+	SimulateAdvanceResponse,
 } from './task';
 
 // Presence types

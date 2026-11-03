@@ -20,14 +20,58 @@ export type TaskType =
  * Task lifecycle status
  */
 export type TaskStatus =
+  /** Booked for a pickup time (dispatch SCHEDULED); Relay has not started looking yet */
+  | 'SCHEDULED'
   | 'PENDING'
+  /** Still looking for a rider after the first offers (dispatch WAIT_FOR_RIDER or SCHEDULED) */
+  | 'SEARCHING'
   | 'OFFERED'
   | 'ASSIGNED'
   | 'IN_PROGRESS'
   | 'COMPLETED'
   | 'CANCELLED'
   | 'FAILED'
-  | 'PAYMENT_FAILED';
+  | 'PAYMENT_FAILED'
+  // Relay adds statuses over time; one this version does not list arrives as its raw string.
+  // Handle the ones you know and treat any other as "still in progress".
+  | (string & {});
+
+/**
+ * When Relay looks for a rider. Relay may add strategies; an unknown one arrives as its raw string.
+ */
+export type DispatchStrategy = 'IMMEDIATE' | 'WAIT_FOR_RIDER' | 'SCHEDULED' | (string & {});
+
+/**
+ * `dispatch` on create and quote. Leave it out for today's behaviour (IMMEDIATE). It is part of
+ * the quote lock: create must send the same `dispatch` as the quote.
+ */
+export type DispatchRequest =
+  /** Offer to nearby riders now; fail with NO_RIDERS_AVAILABLE if nobody accepts (about two minutes) */
+  | { strategy: 'IMMEDIATE' }
+  /** As IMMEDIATE, then keep offering as riders come online nearby, up to `maxWaitMinutes` (5–720; food 5–45) */
+  | { strategy: 'WAIT_FOR_RIDER'; maxWaitMinutes: number }
+  /**
+   * Book for a pickup time 45 minutes to 7 days ahead, priced for that time and held now. Relay
+   * starts looking about 20 minutes before `pickupAt` (ISO 8601 with a UTC offset) and keeps
+   * looking until `pickupWindowMinutes` after it (default 30, at most 120).
+   */
+  | { strategy: 'SCHEDULED'; pickupAt: ISOTimestamp; pickupWindowMinutes?: number };
+
+/**
+ * The dispatch block on every task: the strategy and its search window
+ */
+export interface TaskDispatch {
+  strategy: DispatchStrategy;
+  maxWaitMinutes: number | null;
+  pickupAt: ISOTimestamp | null;
+  pickupWindowMinutes: number | null;
+  /** When Relay started (or starts) looking for a rider */
+  searchStartsAt: ISOTimestamp;
+  /** When Relay stops looking; null for IMMEDIATE (the offer waves decide) */
+  searchExpiresAt: ISOTimestamp | null;
+  /** Offer rounds sent after the first waves, while the task kept searching */
+  offerRounds: number;
+}
 
 /**
  * Task priority level
@@ -79,6 +123,8 @@ export type PaymentMethod = 'WALLET' | 'CARD' | 'TEST';
  * Item being delivered
  */
 export interface Item {
+  /** Your own id for this parcel, so the same parcel can be followed across legs later */
+  reference?: string;
   /** Item name/description */
   name: string;
   /** Additional description */
@@ -262,6 +308,8 @@ export interface Task {
    * sent to the rider. Null when the task was created without one.
    */
   completionCode?: TaskCompletionCode | null;
+  /** When Relay looks for a rider, and for how long */
+  dispatch: TaskDispatch;
 }
 
 /**
@@ -342,7 +390,12 @@ export interface CreateTaskRequest {
    * `{ code: '4821' }` uses your own code; `{ length: 4 }` or `{}` has Relay generate one.
    */
   completionCode?: CompletionCodeRequest;
-  /** Test-mode simulation outcome */
+  /** When Relay looks for a rider (default: IMMEDIATE) */
+  dispatch?: DispatchRequest;
+  /**
+   * Test-mode simulation outcome. SEARCH_THEN_ASSIGNED and SEARCH_EXPIRED need WAIT_FOR_RIDER or
+   * SCHEDULED; NO_RIDERS needs IMMEDIATE.
+   */
   simulationOutcome?:
     | 'SUCCESS'
     | 'NO_RIDERS'
@@ -351,7 +404,9 @@ export interface CreateTaskRequest {
     | 'TIER_3_TIMEOUT'
     | 'RANDOM'
     | 'CANCEL_BEFORE_ACCEPT'
-    | 'CANCEL_AFTER_ACCEPT';
+    | 'CANCEL_AFTER_ACCEPT'
+    | 'SEARCH_THEN_ASSIGNED'
+    | 'SEARCH_EXPIRED';
 }
 
 /**
@@ -426,8 +481,20 @@ export interface CreateTaskResponse {
  */
 export type TaskQuoteRequest = Pick<
   CreateTaskRequest,
-  'taskType' | 'priority' | 'stages' | 'preferences'
+  'taskType' | 'priority' | 'stages' | 'preferences' | 'dispatch'
 >;
+
+/**
+ * Response from simulateAdvance (test keys): the booking's search opens now
+ */
+export interface SimulateAdvanceResponse {
+  message: string;
+  taskId: UUID;
+  /** Still SCHEDULED in the response; it moves to PENDING within seconds */
+  status: TaskStatus;
+  searchStartsAt: ISOTimestamp;
+  searchExpiresAt: ISOTimestamp;
+}
 
 /**
  * Response from pricing quote request
@@ -544,7 +611,8 @@ export interface ManualAssignRequest {
 export interface ManualAssignResponse {
   message: string;
   taskId: UUID;
-  status: 'PENDING';
+  /** SEARCHING for a manual task that keeps looking */
+  status: 'PENDING' | 'SEARCHING';
   workflowInstanceId: string;
   assignment: {
     offerId: string;
