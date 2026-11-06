@@ -393,6 +393,11 @@ export interface CreateTaskRequest {
   /** When Relay looks for a rider (default: IMMEDIATE) */
   dispatch?: DispatchRequest;
   /**
+   * Insurance on the items' declared values. On by default; `false` turns it off for this task, so
+   * no premium is charged and loss or damage is not covered. Send the same value you quoted.
+   */
+  insured?: boolean;
+  /**
    * Test-mode simulation outcome. SEARCH_THEN_ASSIGNED and SEARCH_EXPIRED need WAIT_FOR_RIDER or
    * SCHEDULED; NO_RIDERS needs IMMEDIATE.
    */
@@ -425,6 +430,10 @@ export interface PricingBreakdown {
   priorityFee: AmountInKobo;
   /** Estimated toll cost in kobo */
   tollFee?: AmountInKobo;
+  /** Insurance premium in kobo; 0 when the task is not insured. Included in `subtotal` and `total`. */
+  insuranceFee?: AmountInKobo;
+  /** Declared value the premium covers, in kobo */
+  insuredValue?: AmountInKobo;
   /** Rate basis of the fixed fare; any allowed vehicle may be assigned. */
   pricingVehicleType?: VehicleType;
   /** Surge multiplier applied, when surge pricing is active */
@@ -436,7 +445,7 @@ export interface PricingBreakdown {
     distanceKm: number;
     durationMinutes: number;
   };
-  /** Further itemised fees (base, distance, time, insurance, …) in kobo */
+  /** Further itemised fees (base, distance, time, …) in kobo */
   [fee: string]: unknown;
 }
 
@@ -481,7 +490,7 @@ export interface CreateTaskResponse {
  */
 export type TaskQuoteRequest = Pick<
   CreateTaskRequest,
-  'taskType' | 'priority' | 'stages' | 'preferences' | 'dispatch'
+  'taskType' | 'priority' | 'stages' | 'preferences' | 'dispatch' | 'insured'
 >;
 
 /**
