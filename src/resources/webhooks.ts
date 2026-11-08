@@ -8,6 +8,8 @@ import type {
   CreateWebhookRequest,
   CreateWebhookResponse,
   ListWebhooksResponse,
+  RedeliverWebhookRequest,
+  RedeliverWebhookResponse,
   UpdateWebhookRequest,
   Webhook,
   WebhookSignatureVerification,
@@ -54,6 +56,19 @@ export class Webhooks {
       request,
       undefined,
     );
+  }
+
+  /**
+   * Send a logged event to this endpoint again, with the same event id, so your dedupe still
+   * applies. Events are kept for 30 days.
+   *
+   * @example
+   * ```typescript
+   * await relay.webhooks.redeliver('webhook-123', { eventId: 'evt-from-your-logs' });
+   * ```
+   */
+  async redeliver(webhookId: string, request: RedeliverWebhookRequest): Promise<RedeliverWebhookResponse> {
+    return this.http.post<RedeliverWebhookResponse>(`/sdk/webhooks/${webhookId}/redeliver`, request);
   }
 
   /**

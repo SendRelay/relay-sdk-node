@@ -9,6 +9,8 @@ import { Auth } from './resources/auth';
 import { Presence } from './resources/presence';
 import { Tasks } from './resources/tasks';
 import { Webhooks } from './resources/webhooks';
+import { Events } from './resources/events';
+import { Claims } from './resources/claims';
 import { HttpClient, type HttpClientOptions } from './utils/http';
 
 /**
@@ -152,6 +154,18 @@ export class RelayClient {
    */
   public readonly presence: Presence;
 
+  /**
+   * Event log: every event about your tasks and payments, kept for 30 days
+   * - list, listAll
+   */
+  public readonly events: Events;
+
+  /**
+   * Insurance claims on a task, for insured goods lost, stolen or damaged after collection
+   * - get, createUpload, file, respond, withdraw
+   */
+  public readonly claims: Claims;
+
   constructor(options: RelayClientOptions) {
     // Validate API key
     if (!options.apiKey) {
@@ -191,6 +205,8 @@ export class RelayClient {
     this.webhooks = new Webhooks(this.http);
     this.auth = new Auth(this.http);
     this.presence = new Presence(this.http);
+    this.events = new Events(this.http);
+    this.claims = new Claims(this.http);
   }
 
   /**

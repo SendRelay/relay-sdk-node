@@ -98,6 +98,13 @@ export class HttpClient {
   }
 
   /**
+   * Perform a PATCH request
+   */
+  async patch<T>(path: string, data?: any, config?: RequestConfig): Promise<T> {
+    return this.request<T>('PATCH', path, data, config);
+  }
+
+  /**
    * Perform a DELETE request
    */
   async delete<T>(path: string, config?: RequestConfig): Promise<T> {

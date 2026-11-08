@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.10.0 — 2026-11-08
+
+- `relay.events.list()` and `relay.events.listAll()`: the event log, every event for your account and mode, kept for 30 days. `types` filters by event type.
+- `relay.tasks.events(taskId)`: every event about one task, oldest first.
+- `relay.claims`: insurance claims on a task, for insured goods lost, stolen or damaged after collection. `get`, `createUpload` (a URL to PUT one photo or PDF to), `file`, `respond` and `withdraw`. Live keys only.
+- `relay.webhooks.redeliver(webhookId, { eventId })`: send a logged event to an endpoint again, with the same id.
+- `updatedSince` on `relay.tasks.list()` and `listAll()`: tasks changed since a time, in `updatedAt` order, for reconciliation jobs.
+- `revision` and `currency` on `Task` and `TaskListItem`. Task events carry `data.revision`: apply an event only if it is higher than the revision you stored.
+- `relay.tasks.update(taskId, request)` edits notes, externalId, and a stop's instructions and contact; `relay.tasks.trackingLink(taskId, request?)` returns a hosted tracking page.
+- Stops accept `contact`, `deliverItems` and `completionCode`, and return `arrivedAt`, `waitSeconds` and `completionCodeLength`. `requirePhoto` on create. `dispatch.readyAt` and `dispatch.onRiderCancel`, and the `RIDER_CANCELS_THEN_REASSIGNED` test outcome. Webhook types `task.stage.arrived`, `task.details.updated` and `task.dispatch.rider_unassigned`.
+
 ## 1.9.0 — 2026-11-06
 
 - Insurance on tasks: `insured: false` on `tasks.create` and `tasks.quote` turns it off for that task. It is on by default.

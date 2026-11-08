@@ -24,6 +24,11 @@ import type {
   TaskListItem,
   TaskQuoteRequest,
   TaskQuoteResponse,
+  TaskEventsResponse,
+  Task,
+  TrackingLinkRequest,
+  TrackingLinkResponse,
+  UpdateTaskRequest,
 } from '../types';
 import type { HttpClient } from '../utils/http';
 
@@ -196,6 +201,45 @@ export class Tasks {
    */
   async get(taskId: string): Promise<GetTaskResponse> {
     return this.http.get<GetTaskResponse>(`/sdk/tasks/${taskId}`);
+  }
+
+  /**
+   * Every event about one task, oldest first, each with its `data.revision`.
+   *
+   * @example
+   * ```typescript
+   * const { data } = await relay.tasks.events('task-123');
+   * for (const event of data) console.log(event.data.revision, event.type);
+   * ```
+   */
+  /**
+   * Change notes, externalId, or a stop's instructions and contact until that stop is completed.
+   * Anything that affects price or dispatch is refused with FIELD_NOT_EDITABLE.
+   *
+   * @example
+   * ```typescript
+   * await relay.tasks.update(task.id, { stages: [{ index: 1, instructions: 'Gate 3, ask for Ada' }] });
+   * ```
+   */
+  async update(taskId: string, request: UpdateTaskRequest): Promise<{ task: Task }> {
+    return this.http.patch<{ task: Task }>(`/sdk/tasks/${taskId}`, request);
+  }
+
+  /**
+   * A hosted tracking page for your customer. `stageIndex` limits it to one drop-off.
+   *
+   * @example
+   * ```typescript
+   * const { url } = await relay.tasks.trackingLink(task.id);
+   * await sms.send(customer.phone, `Track your delivery: ${url}`);
+   * ```
+   */
+  async trackingLink(taskId: string, request: TrackingLinkRequest = {}): Promise<TrackingLinkResponse> {
+    return this.http.post<TrackingLinkResponse>(`/sdk/tasks/${taskId}/tracking-link`, request);
+  }
+
+  async events(taskId: string): Promise<TaskEventsResponse> {
+    return this.http.get<TaskEventsResponse>(`/sdk/tasks/${taskId}/events`);
   }
 
   /**

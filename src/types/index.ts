@@ -66,6 +66,11 @@ export type {
 	DispatchRequest,
 	TaskDispatch,
 	SimulateAdvanceResponse,
+	DispatchOptions,
+	StageContact,
+	UpdateTaskRequest,
+	TrackingLinkRequest,
+	TrackingLinkResponse,
 } from './task';
 
 // Presence types
@@ -90,4 +95,28 @@ export type {
 	UpdateWebhookRequest,
 	ListWebhooksResponse,
 	WebhookSignatureVerification,
+	RedeliverWebhookRequest,
+	RedeliverWebhookResponse,
 } from './webhook';
+
+// Event log types
+export type {
+	RelayEvent,
+	ListEventsRequest,
+	ListEventsResponse,
+	TaskEventsResponse,
+} from './event';
+
+// Insurance claim types
+export type {
+	Claim,
+	ClaimFile,
+	ClaimFileContentType,
+	ClaimIncidentType,
+	ClaimState,
+	ClaimStatus,
+	ClaimUpload,
+	CreateClaimUploadRequest,
+	FileClaimRequest,
+	RespondToClaimRequest,
+} from './claim';

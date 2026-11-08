@@ -49,6 +49,21 @@ const bindings: Record<string, Binding> = {
   'webhooks.delete': (r, i) => r.webhooks.delete(i.webhookId!),
   'auth.createWebSocketToken': (r, i) => r.auth.createWebSocketToken(i.body),
   'presence.get': (r, i) => r.presence.get(i.query),
+  'tasks.events': (r, i) => r.tasks.events(i.taskId!),
+  'tasks.update': (r, i) => r.tasks.update(i.taskId!, i.body),
+  'tasks.trackingLink': (r, i) => r.tasks.trackingLink(i.taskId!, i.body),
+  'events.list': (r, i) => r.events.list(i.query),
+  'events.listAll': async (r, i) => {
+    const ids: string[] = [];
+    for await (const event of r.events.listAll(i.query)) ids.push(event.id);
+    return ids;
+  },
+  'webhooks.redeliver': (r, i) => r.webhooks.redeliver(i.webhookId!, i.body),
+  'claims.get': (r, i) => r.claims.get(i.taskId!),
+  'claims.createUpload': (r, i) => r.claims.createUpload(i.taskId!, i.body),
+  'claims.file': (r, i) => r.claims.file(i.taskId!, i.body),
+  'claims.respond': (r, i) => r.claims.respond(i.taskId!, i.body),
+  'claims.withdraw': (r, i) => r.claims.withdraw(i.taskId!),
 };
 // Operations checked by a dedicated fixture file rather than an HTTP exchange.
 const localOperations = new Set(['webhooks.verifySignature']);

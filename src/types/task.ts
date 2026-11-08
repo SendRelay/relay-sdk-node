@@ -47,15 +47,29 @@ export type DispatchStrategy = 'IMMEDIATE' | 'WAIT_FOR_RIDER' | 'SCHEDULED' | (s
  */
 export type DispatchRequest =
   /** Offer to nearby riders now; fail with NO_RIDERS_AVAILABLE if nobody accepts (about two minutes) */
-  | { strategy: 'IMMEDIATE' }
+  | ({ strategy: 'IMMEDIATE'; readyAt?: ISOTimestamp } & DispatchOptions)
   /** As IMMEDIATE, then keep offering as riders come online nearby, up to `maxWaitMinutes` (5–720; food 5–45) */
-  | { strategy: 'WAIT_FOR_RIDER'; maxWaitMinutes: number }
+  | ({ strategy: 'WAIT_FOR_RIDER'; maxWaitMinutes: number; readyAt?: ISOTimestamp } & DispatchOptions)
   /**
    * Book for a pickup time 45 minutes to 7 days ahead, priced for that time and held now. Relay
    * starts looking about 20 minutes before `pickupAt` (ISO 8601 with a UTC offset) and keeps
    * looking until `pickupWindowMinutes` after it (default 30, at most 120).
    */
-  | { strategy: 'SCHEDULED'; pickupAt: ISOTimestamp; pickupWindowMinutes?: number };
+  | ({ strategy: 'SCHEDULED'; pickupAt: ISOTimestamp; pickupWindowMinutes?: number } & DispatchOptions);
+
+/**
+ * Options on every strategy. `readyAt` (IMMEDIATE and WAIT_FOR_RIDER, at most 45 minutes ahead):
+ * when the pickup will be ready; the search opens in time to arrive then, and the task waits as
+ * SCHEDULED until it does.
+ */
+export interface DispatchOptions {
+  /**
+   * What happens if the rider cancels before pickup. `CANCEL` (default): the task ends CANCELLED
+   * and is refunded. `FIND_ANOTHER`: Relay looks again (at most twice) and fires
+   * `task.dispatch.rider_unassigned`; the task goes back to PENDING. Needs autoAssign.
+   */
+  onRiderCancel?: 'CANCEL' | 'FIND_ANOTHER';
+}
 
 /**
  * The dispatch block on every task: the strategy and its search window
@@ -71,6 +85,10 @@ export interface TaskDispatch {
   searchExpiresAt: ISOTimestamp | null;
   /** Offer rounds sent after the first waves, while the task kept searching */
   offerRounds: number;
+  /** When the pickup will be ready, if given */
+  readyAt?: ISOTimestamp | null;
+  /** CANCEL (default) or FIND_ANOTHER when the rider cancels before pickup */
+  onRiderCancel?: 'CANCEL' | 'FIND_ANOTHER';
 }
 
 /**
@@ -175,6 +193,27 @@ export interface Stage {
   completionPhoto?: string | null;
   /** Completion notes */
   completionNotes?: string | null;
+  /** Who to call at this stop. Shown only to the assigned rider, and returned to you */
+  contact?: StageContact | null;
+  /** DROPOFF only: `items[].reference` values from earlier pickups to hand over here */
+  deliverItems?: string[];
+  /**
+   * Request: a code the rider must enter to finish this stop (`{ code }` or `{ length }`). Response:
+   * on create and get, this stop's code. Never sent to the rider.
+   */
+  completionCode?: CompletionCodeRequest | TaskCompletionCode | null;
+  /** Response: digits of this stop's code, when it has one */
+  completionCodeLength?: 4 | 6;
+  /** Response: when the rider reached this stop (inside its geofence); null if not detected */
+  arrivedAt?: ISOTimestamp | null;
+  /** Response: seconds from arrivedAt to completedAt (information only) */
+  waitSeconds?: number | null;
+}
+
+/** Who to call at a stop */
+export interface StageContact {
+  name?: string | null;
+  phone: string;
 }
 
 /**
@@ -304,6 +343,15 @@ export interface Task {
   /** Digits in the completion code (4 or 6), or null when the task has none */
   completionCodeLength: 4 | 6 | null;
   /**
+   * Goes up with every event about this task and matches the `revision` those events carry.
+   * Store it, and apply a webhook only if its `data.revision` is higher. 0 before the first event.
+   */
+  revision: number;
+  /** Currency of every amount on the task, in minor units (kobo for NGN). */
+  currency: 'NGN';
+  /** A completion photo is required at every DROPOFF */
+  requirePhoto?: boolean;
+  /**
    * The completion code itself. Returned on create and get (never in list items), and never
    * sent to the rider. Null when the task was created without one.
    */
@@ -392,6 +440,8 @@ export interface CreateTaskRequest {
   completionCode?: CompletionCodeRequest;
   /** When Relay looks for a rider (default: IMMEDIATE) */
   dispatch?: DispatchRequest;
+  /** A completion photo at every DROPOFF (default: false) */
+  requirePhoto?: boolean;
   /**
    * Insurance on the items' declared values. On by default; `false` turns it off for this task, so
    * no premium is charged and loss or damage is not covered. Send the same value you quoted.
@@ -411,7 +461,30 @@ export interface CreateTaskRequest {
     | 'CANCEL_BEFORE_ACCEPT'
     | 'CANCEL_AFTER_ACCEPT'
     | 'SEARCH_THEN_ASSIGNED'
-    | 'SEARCH_EXPIRED';
+    | 'SEARCH_EXPIRED'
+    /** dispatch.onRiderCancel FIND_ANOTHER only: the first rider cancels, a second completes */
+    | 'RIDER_CANCELS_THEN_REASSIGNED';
+}
+
+/** `relay.tasks.update`: details you can change after create. Anything else is FIELD_NOT_EDITABLE */
+export interface UpdateTaskRequest {
+  notes?: string | null;
+  externalId?: string | null;
+  /** Per stop, until that stop is completed. `contact: null` removes it */
+  stages?: Array<{ index: number; instructions?: string; contact?: StageContact | null }>;
+}
+
+/** `relay.tasks.trackingLink` */
+export interface TrackingLinkRequest {
+  /** Limit the link to one DROPOFF: that recipient sees only their own stop */
+  stageIndex?: number;
+}
+
+/** A hosted tracking page to send your customer. Relay never contacts them itself */
+export interface TrackingLinkResponse {
+  url: string;
+  expiresAt: ISOTimestamp;
+  stageIndex: number | null;
 }
 
 /**
@@ -523,8 +596,13 @@ export interface ListTasksRequest {
   limit?: number;
   /** Pagination cursor */
   cursor?: string;
-  /** Sort order by creation time */
+  /** Sort order: by creation time, or by update time when `updatedSince` is set */
   order?: 'asc' | 'desc';
+  /**
+   * Only tasks changed at or after this ISO 8601 time, ordered by `updatedAt`. For reconciliation
+   * jobs: walk forward with `order: 'asc'` and keep the latest `updatedAt` you saw.
+   */
+  updatedSince?: string;
 }
 
 /**
@@ -545,6 +623,12 @@ export interface TaskListItem {
   createdAt: ISOTimestamp;
   completionCodeRequired?: boolean;
   completionCodeLength?: 4 | 6 | null;
+  /** Same as `Task.revision` */
+  revision?: number;
+  /** Same as `Task.currency` */
+  currency?: 'NGN';
+  /** Last update timestamp */
+  updatedAt?: ISOTimestamp;
 }
 
 /**

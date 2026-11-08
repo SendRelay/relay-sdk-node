@@ -122,6 +122,11 @@ export type {
 	AvailableRidersResponse,
 	TaskCompletionCode,
 	CompletionCodeRequest,
+	DispatchOptions,
+	StageContact,
+	UpdateTaskRequest,
+	TrackingLinkRequest,
+	TrackingLinkResponse,
 	// Presence types
 	PresenceResolution,
 	PresenceDensity,
@@ -140,6 +145,24 @@ export type {
 	UpdateWebhookRequest,
 	ListWebhooksResponse,
 	WebhookSignatureVerification,
+	RedeliverWebhookRequest,
+	RedeliverWebhookResponse,
+	// Event log types
+	RelayEvent,
+	ListEventsRequest,
+	ListEventsResponse,
+	TaskEventsResponse,
+	// Insurance claim types
+	Claim,
+	ClaimFile,
+	ClaimFileContentType,
+	ClaimIncidentType,
+	ClaimState,
+	ClaimStatus,
+	ClaimUpload,
+	CreateClaimUploadRequest,
+	FileClaimRequest,
+	RespondToClaimRequest,
 } from './types';
 
 // Auth types

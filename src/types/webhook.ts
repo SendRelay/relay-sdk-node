@@ -22,6 +22,9 @@ export type SubscribableWebhookEventType =
 	| 'task.status.failed'
 	| 'task.status.cancelled'
 	| 'task.stage.completed'
+	| 'task.stage.arrived'
+	| 'task.details.updated'
+	| 'task.dispatch.rider_unassigned'
 	// Payment events
 	| 'payment.pending'
 	| 'payment.released'
@@ -133,4 +136,17 @@ export interface WebhookSignatureVerification {
 	valid: boolean;
 	/** Error message (if valid is false) */
 	error?: string;
+}
+
+/** Send a logged event to an endpoint again */
+export interface RedeliverWebhookRequest {
+  /** The event's `id`, from a webhook, `relay.events.list` or `relay.tasks.events` */
+  eventId: string;
+}
+
+/** The event was queued; it is delivered with the same id and the normal retry schedule */
+export interface RedeliverWebhookResponse {
+  webhookId: string;
+  eventId: string;
+  queued: true;
 }
