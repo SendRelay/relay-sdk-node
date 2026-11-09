@@ -33,9 +33,15 @@ export class Presence {
    *   drawPolygon(cell.boundary, { density: cell.density, vehicles: cell.vehicleTypes });
    * }
    * console.log(`${presence.totals.byVehicleType.MOTORCYCLE} motorcycles nearby`);
+   *
+   * // Only riders who could take a food delivery (motorcycles need a box):
+   * const food = await relay.presence.get({ latitude: 6.5244, longitude: 3.3792, taskType: 'FOOD_DELIVERY' });
+   * console.log(food.totals.availableRiders, food.requirements);
    * ```
    */
   async get(request: PresenceRequest): Promise<PresenceResponse> {
-    return this.http.get<PresenceResponse>('/sdk/presence', { params: request });
+    const { vehicleType, ...rest } = request;
+    const params = vehicleType && vehicleType.length > 0 ? { ...rest, vehicleType: vehicleType.join(',') } : rest;
+    return this.http.get<PresenceResponse>('/sdk/presence', { params });
   }
 }

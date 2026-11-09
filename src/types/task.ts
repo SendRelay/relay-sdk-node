@@ -222,7 +222,10 @@ export interface StageContact {
 export interface Preferences {
   /** Minimum rider rating (1-5) */
   minRating?: number;
-  /** Requires a delivery box; does not guarantee insulation */
+  /**
+   * `true` asks every vehicle for a delivery box and `false` asks none. Left out, Relay decides from
+   * the task type and load (see `requirements`). Does not guarantee insulation.
+   */
   hasBox?: boolean;
   /** Requires refrigeration */
   hasRefrigeration?: boolean;
@@ -236,6 +239,18 @@ export interface Preferences {
   blockedOrganisations?: string[];
   /** Whether independent riders are allowed */
   allowIndependentRiders?: boolean;
+}
+
+/** Equipment on a rider's vehicle. Treat a value you don't recognise as equipment you can't check. */
+export type RiderEquipment = 'BOX' | 'REFRIGERATION' | 'AIR_CONDITIONING' | (string & {});
+
+/**
+ * What Relay looks for in a rider: each vehicle that can take the task, with the equipment a rider
+ * on it needs (for example a box on a motorcycle for food). Every vehicle is listed when the task
+ * names none.
+ */
+export interface TaskRequirements {
+  vehicles: Array<{ vehicleType: VehicleType; equipment: RiderEquipment[] }>;
 }
 
 /**
@@ -358,6 +373,8 @@ export interface Task {
   completionCode?: TaskCompletionCode | null;
   /** When Relay looks for a rider, and for how long */
   dispatch: TaskDispatch;
+  /** The vehicles Relay looks for and the equipment a rider on each needs */
+  requirements?: TaskRequirements;
 }
 
 /**
@@ -586,6 +603,8 @@ export type TaskQuoteResponse = PricingBreakdown & {
   quoteId: string;
   expiresAt: string;
   quoteTtlSeconds: number;
+  /** What the task will need, as create will store it */
+  requirements?: TaskRequirements;
 };
 
 /**

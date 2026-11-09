@@ -5,7 +5,7 @@
  */
 
 import type { ISOTimestamp } from './common';
-import type { VehicleType } from './task';
+import type { Size, TaskRequirements, TaskType, VehicleType, Weight } from './task';
 
 /**
  * How finely presence is grouped. Nothing finer than a city block is ever returned.
@@ -42,12 +42,24 @@ export interface PresenceCell {
   vehicleTypes: VehicleType[];
 }
 
-/** Request for a presence map around a point */
+/**
+ * Request for a presence map around a point. With `taskType`, only riders who could take that
+ * job are counted; the other filter fields use the quote's meanings and apply only with it.
+ */
 export interface PresenceRequest {
   latitude: number;
   longitude: number;
   /** Defaults to `BLOCK` */
   resolution?: PresenceResolution;
+  taskType?: TaskType;
+  /** Sent as a comma-separated list */
+  vehicleType?: VehicleType[];
+  hasBox?: boolean;
+  hasRefrigeration?: boolean;
+  hasAirConditioning?: boolean;
+  /** The item you're sending; the smallest class when left out */
+  estimatedWeight?: Weight;
+  estimatedSize?: Size;
 }
 
 /** Anonymous presence of available riders around a point */
@@ -72,4 +84,6 @@ export interface PresenceResponse {
   generatedAt: ISOTimestamp;
   /** Snapshots are cached; polling faster than this returns the same data */
   refreshAfterSeconds: number;
+  /** With `taskType`: what those riders have, as the quote would return it */
+  requirements?: TaskRequirements;
 }

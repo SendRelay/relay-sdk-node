@@ -26,6 +26,8 @@ export type {
 	Weight,
 	Size,
 	VehicleType,
+	RiderEquipment,
+	TaskRequirements,
 	PaymentStatus,
 	PaymentMethod,
 	Item,
