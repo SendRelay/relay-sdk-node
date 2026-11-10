@@ -110,7 +110,7 @@ export class Tasks {
    *   idempotencyKey: 'order-12345-delivery',
    * });
    *
-   * console.log(`Task created: ${task.task.taskId}`);
+   * console.log(`Task created: ${task.task.id}`);
    * console.log(`Status: ${task.task.status}`);
    * console.log(`Total cost: ₦${task.task.totalFee / 100}`);
    * ```

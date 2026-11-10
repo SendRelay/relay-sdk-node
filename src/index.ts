@@ -40,7 +40,7 @@
  * ```typescript
  * // Generate token for frontend client to track task
  * const { token } = await relay.auth.createWebSocketToken({
- *   scope: [`task:${result.task.taskId}`],
+ *   scope: [`task:${result.task.id}`],
  *   expiresIn: 3600, // 1 hour
  * });
  *

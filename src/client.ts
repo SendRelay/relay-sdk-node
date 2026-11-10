@@ -106,7 +106,7 @@ export interface RelayClientOptions {
  *   ],
  * });
  *
- * console.log(result.task.taskId);
+ * console.log(result.task.id);
  *
  * // List tasks
  * for await (const task of relay.tasks.listAll({ limit: 30 })) {
