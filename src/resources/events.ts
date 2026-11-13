@@ -1,5 +1,5 @@
 /**
- * Event log: every event Relay sent (or would have sent) to your webhooks, kept for 30 days.
+ * Event log: every event SendRelay sent (or would have sent) to your webhooks, kept for 30 days.
  *
  * @module resources/events
  */

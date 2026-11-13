@@ -1,7 +1,7 @@
 /**
- * Relay SDK for Node.js - Server SDK
+ * SendRelay SDK for Node.js - Server SDK
  *
- * Official **server-side** SDK for integrating with the Relay delivery platform from Node.js applications.
+ * Official **server-side** SDK for integrating with the SendRelay delivery platform from Node.js applications.
  *
  * **⚠️ Server-Side Only:** This SDK requires a server-side API key and should never be used in
  * browser/frontend applications. For client-side applications, use:

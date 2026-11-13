@@ -1,6 +1,6 @@
 # WebSocket Authentication Guide
 
-This guide shows how to set up secure WebSocket authentication for your frontend clients using the Relay SDK.
+This guide shows how to set up secure WebSocket authentication for your frontend clients using the SendRelay SDK.
 
 ## Overview
 
@@ -11,7 +11,7 @@ WebSocket authentication uses a **two-step token exchange**:
 
 ```
 ┌─────────┐                ┌─────────────┐                ┌──────────────┐
-│ Browser │                │ Your Server │                │  Relay API   │
+│ Browser │                │ Your Server │                │  SendRelay API   │
 └─────────┘                └─────────────┘                └──────────────┘
      │                            │                              │
      │  1. Request token          │                              │
@@ -60,7 +60,7 @@ app.post('/api/relay/token', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    // 3. Create Relay session token (scoped to these tasks)
+    // 3. Create SendRelay session token (scoped to these tasks)
     const token = await relay.auth.createWebSocketToken({
       scope: taskIds.map(id => `task:${id}`),  // Scope to multiple tasks
       expiresIn: 1800, // 30 minutes
@@ -115,7 +115,7 @@ export default async function handler(
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    // Create Relay session token
+    // Create SendRelay session token
     const token = await relay.auth.createWebSocketToken({
       scope: taskIds.map(id => `task:${id}`),  // Scope to multiple tasks
       expiresIn: 1800,
@@ -160,7 +160,7 @@ export class RelayController {
       throw new ForbiddenException();
     }
 
-    // Create Relay session token
+    // Create SendRelay session token
     const token = await this.relay.auth.createWebSocketToken({
       scope: taskIds.map(id => `task:${id}`),  // Scope to multiple tasks
       expiresIn: 1800,
@@ -272,7 +272,7 @@ onMounted(async () => {
       taskStatus.value = 'Completed';
     });
   } catch (error) {
-    console.error('Relay setup failed:', error);
+    console.error('SendRelay setup failed:', error);
   }
 });
 
@@ -376,7 +376,7 @@ The SDK ensures you always have a valid token scoped to all tasks you're listeni
 
 ### Token validation fails
 - Verify your backend is using the correct API key
-- Check that taskId exists in Relay and belongs to your developer account
+- Check that taskId exists in SendRelay and belongs to your developer account
 - Ensure token hasn't expired
 
 ### WebSocket connection fails

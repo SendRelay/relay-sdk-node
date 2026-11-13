@@ -85,7 +85,7 @@ export class Auth {
    *   const task = await db.tasks.findOne({ id: taskId, userId });
    *   if (!task) return res.status(403).json({ error: 'Forbidden' });
    *
-   *   // Create Relay session token
+   *   // Create SendRelay session token
    *   const token = await relay.auth.createWebSocketToken({
    *     scope: [`task:${taskId}`],
    *     expiresIn: 1800, // 30 minutes

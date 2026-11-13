@@ -20,7 +20,7 @@ export type TaskType =
  * Task lifecycle status
  */
 export type TaskStatus =
-  /** Booked for a pickup time (dispatch SCHEDULED); Relay has not started looking yet */
+  /** Booked for a pickup time (dispatch SCHEDULED); SendRelay has not started looking yet */
   | 'SCHEDULED'
   | 'PENDING'
   /** Still looking for a rider after the first offers (dispatch WAIT_FOR_RIDER or SCHEDULED) */
@@ -32,12 +32,12 @@ export type TaskStatus =
   | 'CANCELLED'
   | 'FAILED'
   | 'PAYMENT_FAILED'
-  // Relay adds statuses over time; one this version does not list arrives as its raw string.
+  // SendRelay adds statuses over time; one this version does not list arrives as its raw string.
   // Handle the ones you know and treat any other as "still in progress".
   | (string & {});
 
 /**
- * When Relay looks for a rider. Relay may add strategies; an unknown one arrives as its raw string.
+ * When SendRelay looks for a rider. SendRelay may add strategies; an unknown one arrives as its raw string.
  */
 export type DispatchStrategy = 'IMMEDIATE' | 'WAIT_FOR_RIDER' | 'SCHEDULED' | (string & {});
 
@@ -51,7 +51,7 @@ export type DispatchRequest =
   /** As IMMEDIATE, then keep offering as riders come online nearby, up to `maxWaitMinutes` (5–720; food 5–45) */
   | ({ strategy: 'WAIT_FOR_RIDER'; maxWaitMinutes: number; readyAt?: ISOTimestamp } & DispatchOptions)
   /**
-   * Book for a pickup time 45 minutes to 7 days ahead, priced for that time and held now. Relay
+   * Book for a pickup time 45 minutes to 7 days ahead, priced for that time and held now. SendRelay
    * starts looking about 20 minutes before `pickupAt` (ISO 8601 with a UTC offset) and keeps
    * looking until `pickupWindowMinutes` after it (default 30, at most 120).
    */
@@ -65,7 +65,7 @@ export type DispatchRequest =
 export interface DispatchOptions {
   /**
    * What happens if the rider cancels before pickup. `CANCEL` (default): the task ends CANCELLED
-   * and is refunded. `FIND_ANOTHER`: Relay looks again (at most twice) and fires
+   * and is refunded. `FIND_ANOTHER`: SendRelay looks again (at most twice) and fires
    * `task.dispatch.rider_unassigned`; the task goes back to PENDING. Needs autoAssign.
    */
   onRiderCancel?: 'CANCEL' | 'FIND_ANOTHER';
@@ -79,9 +79,9 @@ export interface TaskDispatch {
   maxWaitMinutes: number | null;
   pickupAt: ISOTimestamp | null;
   pickupWindowMinutes: number | null;
-  /** When Relay started (or starts) looking for a rider */
+  /** When SendRelay started (or starts) looking for a rider */
   searchStartsAt: ISOTimestamp;
-  /** When Relay stops looking; null for IMMEDIATE (the offer waves decide) */
+  /** When SendRelay stops looking; null for IMMEDIATE (the offer waves decide) */
   searchExpiresAt: ISOTimestamp | null;
   /** Offer rounds sent after the first waves, while the task kept searching */
   offerRounds: number;
@@ -223,7 +223,7 @@ export interface Preferences {
   /** Minimum rider rating (1-5) */
   minRating?: number;
   /**
-   * `true` asks every vehicle for a delivery box and `false` asks none. Left out, Relay decides from
+   * `true` asks every vehicle for a delivery box and `false` asks none. Left out, SendRelay decides from
    * the task type and load (see `requirements`). Does not guarantee insulation.
    */
   hasBox?: boolean;
@@ -245,7 +245,7 @@ export interface Preferences {
 export type RiderEquipment = 'BOX' | 'REFRIGERATION' | 'AIR_CONDITIONING' | (string & {});
 
 /**
- * What Relay looks for in a rider: each vehicle that can take the task, with the equipment a rider
+ * What SendRelay looks for in a rider: each vehicle that can take the task, with the equipment a rider
  * on it needs (for example a box on a motorcycle for food). Every vehicle is listed when the task
  * names none.
  */
@@ -371,9 +371,9 @@ export interface Task {
    * sent to the rider. Null when the task was created without one.
    */
   completionCode?: TaskCompletionCode | null;
-  /** When Relay looks for a rider, and for how long */
+  /** When SendRelay looks for a rider, and for how long */
   dispatch: TaskDispatch;
-  /** The vehicles Relay looks for and the equipment a rider on each needs */
+  /** The vehicles SendRelay looks for and the equipment a rider on each needs */
   requirements?: TaskRequirements;
 }
 
@@ -385,7 +385,7 @@ export interface TaskCompletionCode {
   /** The digits to share with your customer */
   code: string;
   length: 4 | 6;
-  /** `CUSTOM` when you supplied the code, `GENERATED` when Relay generated it */
+  /** `CUSTOM` when you supplied the code, `GENERATED` when SendRelay generated it */
   source: 'CUSTOM' | 'GENERATED';
   /** `LOCKED` while entry is paused after five wrong attempts (for 15 minutes) */
   status: 'PENDING' | 'VERIFIED' | 'LOCKED';
@@ -396,7 +396,7 @@ export interface TaskCompletionCode {
 }
 
 /**
- * Ask for a completion code when creating a task: supply your own 4 or 6 digits, or let Relay
+ * Ask for a completion code when creating a task: supply your own 4 or 6 digits, or let SendRelay
  * generate one (6 digits by default). Omit it and the task completes without a code.
  */
 export type CompletionCodeRequest = { code: string } | { length?: 4 | 6 };
@@ -452,10 +452,10 @@ export interface CreateTaskRequest {
   preferences?: Preferences;
   /**
    * Opt-in proof of delivery: the rider must enter this code to complete the final drop-off.
-   * `{ code: '4821' }` uses your own code; `{ length: 4 }` or `{}` has Relay generate one.
+   * `{ code: '4821' }` uses your own code; `{ length: 4 }` or `{}` has SendRelay generate one.
    */
   completionCode?: CompletionCodeRequest;
-  /** When Relay looks for a rider (default: IMMEDIATE) */
+  /** When SendRelay looks for a rider (default: IMMEDIATE) */
   dispatch?: DispatchRequest;
   /** A completion photo at every DROPOFF (default: false) */
   requirePhoto?: boolean;
@@ -497,7 +497,7 @@ export interface TrackingLinkRequest {
   stageIndex?: number;
 }
 
-/** A hosted tracking page to send your customer. Relay never contacts them itself */
+/** A hosted tracking page to send your customer. SendRelay never contacts them itself */
 export interface TrackingLinkResponse {
   url: string;
   expiresAt: ISOTimestamp;

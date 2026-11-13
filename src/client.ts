@@ -1,5 +1,5 @@
 /**
- * Main Relay SDK client for server-side integration
+ * Main SendRelay SDK client for server-side integration
  *
  * @module client
  */
@@ -14,7 +14,7 @@ import { Claims } from './resources/claims';
 import { HttpClient, type HttpClientOptions } from './utils/http';
 
 /**
- * Relay SDK client configuration options
+ * SendRelay SDK client configuration options
  */
 export interface RelayClientOptions {
   /**
@@ -87,7 +87,7 @@ export interface RelayClientOptions {
 }
 
 /**
- * Main Relay SDK client for server-side integration
+ * Main SendRelay SDK client for server-side integration
  *
  * @example
  * ```typescript

@@ -1,7 +1,7 @@
 import { RelayError } from './RelayError';
 
 /**
- * API error from Relay backend (4xx, 5xx HTTP responses)
+ * API error from SendRelay backend (4xx, 5xx HTTP responses)
  *
  * @example
  * ```typescript

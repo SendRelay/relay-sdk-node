@@ -1,11 +1,11 @@
-# Relay Node.js SDK
+# SendRelay Node.js SDK
 
 [![npm version](https://img.shields.io/npm/v/@relay-sdk/sdk-node.svg)](https://www.npmjs.com/package/@relay-sdk/sdk-node)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Official server SDK for Relay.
+Official server SDK for SendRelay.
 
-This package is for backend/server environments only. It uses your Relay API key and should never run in browsers or mobile apps. For live tracking in apps, use [`@relay-sdk/sdk-browser`](https://www.npmjs.com/package/@relay-sdk/sdk-browser) or [`relay_flutter`](https://pub.dev/packages/relay_flutter) with tracking tokens minted by this SDK.
+This package is for backend/server environments only. It uses your SendRelay API key and should never run in browsers or mobile apps. For live tracking in apps, use [`@relay-sdk/sdk-browser`](https://www.npmjs.com/package/@relay-sdk/sdk-browser) or [`relay_flutter`](https://pub.dev/packages/relay_flutter) with tracking tokens minted by this SDK.
 
 📖 **Full documentation:** [docs.sendrelay.com.ng](https://docs.sendrelay.com.ng) · [Quickstart](https://docs.sendrelay.com.ng/getting-started) · [SDK reference](https://docs.sendrelay.com.ng/sdks/node-sdk)
 
@@ -22,7 +22,7 @@ yarn add @relay-sdk/sdk-node
 ## Requirements
 
 - Node.js `>=18`
-- Relay API key: `sk_live_...` or `sk_test_...`
+- SendRelay API key: `sk_live_...` or `sk_test_...`
 
 ## Quick Start
 
@@ -200,7 +200,7 @@ await relay.tasks.dispute(created.task.id, {
 
 ## Completion codes
 
-Require the customer's code before the rider can complete the final drop-off. Pass `{}` (Relay generates 6 digits), `{ length: 4 }`, or `{ code: '4821' }`:
+Require the customer's code before the rider can complete the final drop-off. Pass `{}` (SendRelay generates 6 digits), `{ length: 4 }`, or `{ code: '4821' }`:
 
 ```ts
 const { task } = await relay.tasks.create({ ...body, completionCode: { length: 4 } }, { idempotencyKey: 'order-1001-delivery-1' });
@@ -222,9 +222,9 @@ Snapshots are cached for `presence.refreshAfterSeconds` (30 s). Test keys get si
 
 ## Webhooks API
 
-Webhook management calls use `X-Relay-Key` on `/v1/sdk/webhooks`; the key needs the `task:*` permission. Test-mode webhooks can be created, updated, and deleted from sign-up, before business approval. Live-mode webhooks require completed onboarding and a `VERIFIED` business profile. The signed-in dashboard uses `/v1/developer/webhooks`; inbound payment provider callbacks use `/v1/webhooks/flutterwave`. A developer JWT alone does not authorize SDK webhook CRUD. To try a receiver before exposing it publicly, use the [local signed receiver fixture](https://docs.sendrelay.com.ng/examples/webhook-local-fixture.mjs); its events are locally generated, not delivered by Relay.
+Webhook management calls use `X-Relay-Key` on `/v1/sdk/webhooks`; the key needs the `task:*` permission. Test-mode webhooks can be created, updated, and deleted from sign-up, before business approval. Live-mode webhooks require completed onboarding and a `VERIFIED` business profile. The signed-in dashboard uses `/v1/developer/webhooks`; inbound payment provider callbacks use `/v1/webhooks/flutterwave`. A developer JWT alone does not authorize SDK webhook CRUD. To try a receiver before exposing it publicly, use the [local signed receiver fixture](https://docs.sendrelay.com.ng/examples/webhook-local-fixture.mjs); its events are locally generated, not delivered by SendRelay.
 
-`mode` defaults to `'live'` and must match your key, so pass `mode: 'test'` with a test key (otherwise `403`). Registration fails with `409` if you already have a webhook in that `mode` (delete it first) or hit the webhook limit, and with `400` if the URL is not public HTTPS or does not return `2xx` to Relay's verification request.
+`mode` defaults to `'live'` and must match your key, so pass `mode: 'test'` with a test key (otherwise `403`). Registration fails with `409` if you already have a webhook in that `mode` (delete it first) or hit the webhook limit, and with `400` if the URL is not public HTTPS or does not return `2xx` to SendRelay's verification request.
 
 ```ts
 // Create
@@ -246,7 +246,7 @@ await relay.webhooks.update(webhook.id, {
 await relay.webhooks.delete(webhook.id);
 ```
 
-After registering a test endpoint with a `sk_test_...` key, create a test task with `simulationOutcome: 'SUCCESS'` to exercise matching test-mode lifecycle events. See the [simulation guide](https://docs.sendrelay.com.ng/simulation). The local fixture does not send Relay events.
+After registering a test endpoint with a `sk_test_...` key, create a test task with `simulationOutcome: 'SUCCESS'` to exercise matching test-mode lifecycle events. See the [simulation guide](https://docs.sendrelay.com.ng/simulation). The local fixture does not send SendRelay events.
 
 ### Verify Webhook Signature
 
@@ -280,7 +280,7 @@ app.post('/webhooks/relay', express.raw({ type: 'application/json' }), (req, res
   );
 
   if (!result.valid) {
-    console.warn('Relay webhook rejected:', result.error);
+    console.warn('SendRelay webhook rejected:', result.error);
     return res.status(401).send('Invalid signature');
   }
 
@@ -324,7 +324,7 @@ try {
   } else if (error instanceof NetworkError) {
     console.error('Network/timeout error:', error.message);
   } else if (error instanceof ApiError) {
-    console.error('Relay API error:', error.statusCode, error.code, error.message);
+    console.error('SendRelay API error:', error.statusCode, error.code, error.message);
     console.error('Details:', error.details);
   } else {
     console.error('Unknown error:', error);
@@ -372,9 +372,9 @@ const totalNaira = (totalKobo / 100).toFixed(2); // "5756.63"
 
 MIT
 
-## For Relay contributors
+## For SendRelay contributors
 
-These notes apply when running against a local or reduced development stage of the Relay API, not to normal integrations.
+These notes apply when running against a local or reduced development stage of the SendRelay API, not to normal integrations.
 
 ### Local HTTP integration check
 
@@ -389,7 +389,7 @@ curl -i -X OPTIONS http://localhost:8787/v1/sdk/tasks \
 
 Expect status `204`, wildcard allowed Origin, `Vary: Access-Control-Request-Headers`,
 and `Authorization,Content-Type,x-relay-key` in allowed headers. The Hono default
-method list includes `QUERY`; use the documented method for each Relay endpoint.
+method list includes `QUERY`; use the documented method for each SendRelay endpoint.
 A successful preflight does not authorize an API request. This server SDK does not
 perform browser preflights; keep API keys on the backend.
 

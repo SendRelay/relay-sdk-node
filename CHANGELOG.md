@@ -2,7 +2,7 @@
 
 ## 1.11.0 — 2026-11-09
 
-- `requirements` on `Task` and `TaskQuoteResponse` (`TaskRequirements`, `RiderEquipment`): each vehicle Relay looks for and the equipment a rider on it needs, for example a box on a motorcycle for food. See [the box a task needs](https://docs.sendrelay.com.ng/concepts/dispatch#the-box-a-task-needs).
+- `requirements` on `Task` and `TaskQuoteResponse` (`TaskRequirements`, `RiderEquipment`): each vehicle SendRelay looks for and the equipment a rider on it needs, for example a box on a motorcycle for food. See [the box a task needs](https://docs.sendrelay.com.ng/concepts/dispatch#the-box-a-task-needs).
 - `relay.presence.get()` takes a job: `taskType`, `vehicleType` (an array, sent as a comma-separated list), `hasBox`, `hasRefrigeration`, `hasAirConditioning`, `estimatedWeight` and `estimatedSize`, with the quote's meanings. It then counts only riders who could take that job and returns `requirements`. Without `taskType` the map is unchanged.
 
 ## 1.10.0 — 2026-11-08
@@ -27,10 +27,10 @@
 - `dispatch` on `tasks.create` and `tasks.quote` (`DispatchRequest`: `IMMEDIATE`, `WAIT_FOR_RIDER` with `maxWaitMinutes`, `SCHEDULED` with `pickupAt`), and `task.dispatch` (`TaskDispatch`) with the search window. The `SCHEDULED` and `SEARCHING` statuses, the `task.status.searching`, `task.dispatch.started` and `task.dispatch.riders_nearby` webhook events, and the `SEARCH_THEN_ASSIGNED` and `SEARCH_EXPIRED` test outcomes are typed.
 - `relay.tasks.simulateAdvance(taskId)` (test keys) starts a booking's search now.
 - Task requests accept an optional `reference` on items, and optional `countryCode` (ISO 3166-1 alpha-2) and `postalCode` on stage locations. They are returned on the task when sent, and not used in pricing yet.
-- Statuses and webhook event types this version doesn't list arrive as their raw strings; the `TaskStatus` and `WebhookEventType` types now say so. Relay will add task statuses (for example for tasks that keep searching for a rider), so treat a status you don't recognise as still in progress.
+- Statuses and webhook event types this version doesn't list arrive as their raw strings; the `TaskStatus` and `WebhookEventType` types now say so. SendRelay will add task statuses (for example for tasks that keep searching for a rider), so treat a status you don't recognise as still in progress.
 
 ## 1.7.0 — 2026-10-29
 
 - Sends its real version in `User-Agent` (it always said 1.0.0).
 - Runs the shared SDK conformance suite.
-- From this release the Relay server SDKs share one version.
+- From this release the SendRelay server SDKs share one version.

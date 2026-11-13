@@ -62,7 +62,7 @@ export class Claims {
     return this.http.post<Claim>(`/sdk/tasks/${taskId}/claim`, request);
   }
 
-  /** Answer Relay's request for more information, while the claim is `NEEDS_INFO`. */
+  /** Answer SendRelay's request for more information, while the claim is `NEEDS_INFO`. */
   async respond(taskId: string, request: RespondToClaimRequest): Promise<Claim> {
     return this.http.post<Claim>(`/sdk/tasks/${taskId}/claim/respond`, request);
   }

@@ -9,7 +9,7 @@
 export type ClaimIncidentType = 'LOST' | 'STOLEN' | 'DAMAGED';
 
 /**
- * Where a claim is. `NEEDS_INFO`: Relay asked you for more (see `infoRequest`); answer with
+ * Where a claim is. `NEEDS_INFO`: SendRelay asked you for more (see `infoRequest`); answer with
  * `claims.respond`. `WITH_INSURER`: the insurer is deciding. `PAID`: the approved amount is in your wallet.
  */
 export type ClaimStatus = 'SUBMITTED' | 'NEEDS_INFO' | 'WITH_INSURER' | 'APPROVED' | 'DECLINED' | 'PAID' | 'WITHDRAWN';
@@ -23,7 +23,7 @@ export interface ClaimFile {
 /** A claim, as you see it. */
 export interface Claim {
   id: string;
-  /** What Relay and the insurer quote, like `CLM-7KQ2M-X4P9R`. */
+  /** What SendRelay and the insurer quote, like `CLM-7KQ2M-X4P9R`. */
   reference: string;
   status: ClaimStatus;
   incidentType: ClaimIncidentType;
@@ -34,7 +34,7 @@ export interface Claim {
   approvedAmount: number | null;
   description: string;
   files: { name: string }[];
-  /** What Relay asked you for, while `NEEDS_INFO`. */
+  /** What SendRelay asked you for, while `NEEDS_INFO`. */
   infoRequest: string | null;
   /** Why it was approved or declined. */
   decisionReason: string | null;

@@ -1,5 +1,5 @@
 /**
- * Base error class for all Relay SDK errors
+ * Base error class for all SendRelay SDK errors
  *
  * @example
  * ```typescript
@@ -7,7 +7,7 @@
  *   await relay.tasks.create({...});
  * } catch (error) {
  *   if (error instanceof RelayError) {
- *     console.error('Relay SDK error:', error.message);
+ *     console.error('SendRelay SDK error:', error.message);
  *   }
  * }
  * ```

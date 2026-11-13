@@ -164,7 +164,7 @@ export class Webhooks {
    * Verify webhook signature (for use in your webhook endpoint)
    *
    * Use this method in your webhook handler to verify that the request
-   * actually came from Relay and hasn't been tampered with.
+   * actually came from SendRelay and hasn't been tampered with.
    *
    * @param payload - Raw request body as string
    * @param signatureHeader - X-Relay-Signature header value

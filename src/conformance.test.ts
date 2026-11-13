@@ -1,6 +1,6 @@
 /**
  * Runs the shared SDK conformance fixtures (packages/sdks/conformance) against this SDK.
- * Every Relay SDK runs the same fixtures, which is how they stay at parity.
+ * Every SendRelay SDK runs the same fixtures, which is how they stay at parity.
  */
 import * as fs from 'fs';
 import * as path from 'path';

@@ -32,7 +32,7 @@ export type SubscribableWebhookEventType =
 	| 'payment.dispute_resolved';
 
 /**
- * Relay verification probe event type.
+ * SendRelay verification probe event type.
  * Sent only during endpoint verification checks and not subscribable.
  */
 export type VerificationWebhookEventType = 'webhook.verification.test';
@@ -43,7 +43,7 @@ export type VerificationWebhookEventType = 'webhook.verification.test';
 export type WebhookEventType =
 	| SubscribableWebhookEventType
 	| VerificationWebhookEventType
-	// Relay adds event types over time; acknowledge ones you do not handle with a 2xx.
+	// SendRelay adds event types over time; acknowledge ones you do not handle with a 2xx.
 	| (string & {});
 
 /**
