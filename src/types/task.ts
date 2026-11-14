@@ -119,7 +119,7 @@ export type Size = 'ENVELOPE' | 'BOX' | 'LARGE_BOX' | 'FREIGHT';
 /**
  * Vehicle type for delivery preferences
  */
-export type VehicleType = 'BICYCLE' | 'BIKE' | 'MOTORCYCLE' | 'TRICYCLE' | 'CAR' | 'VAN' | 'TRUCK';
+export type VehicleType = 'BICYCLE' | 'MOTORCYCLE' | 'TRICYCLE' | 'CAR' | 'VAN' | 'TRUCK';
 
 /**
  * Payment status for a task
