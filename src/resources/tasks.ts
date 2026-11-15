@@ -30,6 +30,7 @@ import type {
   TrackingLinkResponse,
   UpdateTaskRequest,
 } from '../types';
+import { ApiError, ValidationError } from '../errors';
 import type { HttpClient } from '../utils/http';
 
 /**
@@ -201,6 +202,26 @@ export class Tasks {
    */
   async get(taskId: string): Promise<GetTaskResponse> {
     return this.http.get<GetTaskResponse>(`/sdk/tasks/${taskId}`);
+  }
+
+  /**
+   * Get a task by the `externalId` you gave it (your order ID), or `null` if no task in this key's
+   * mode has it. Returns the same result as `get`.
+   *
+   * @example
+   * ```typescript
+   * const found = await relay.tasks.getByExternalId(order.id);
+   * if (found) console.log(found.task.id, found.task.status);
+   * ```
+   */
+  async getByExternalId(externalId: string): Promise<GetTaskResponse | null> {
+    if (!externalId) throw new ValidationError('externalId is required', 'externalId');
+    try {
+      return await this.http.get<GetTaskResponse>(`/sdk/tasks/by-external-id/${encodeURIComponent(externalId)}`);
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === 404 && error.code === 'NOT_FOUND') return null;
+      throw error;
+    }
   }
 
   /**

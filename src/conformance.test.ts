@@ -19,7 +19,7 @@ type Exchange = {
 type Fixture = {
   name: string;
   operation: string;
-  input: { taskId?: string; webhookId?: string; body?: any; query?: any; idempotencyKey?: string };
+  input: { taskId?: string; webhookId?: string; externalId?: string; body?: any; query?: any; idempotencyKey?: string };
   exchanges: Exchange[];
   expect: { result?: Record<string, unknown>; items?: string[]; error?: Record<string, unknown> };
 };
@@ -36,6 +36,7 @@ const bindings: Record<string, Binding> = {
     return ids;
   },
   'tasks.get': (r, i) => r.tasks.get(i.taskId!),
+  'tasks.getByExternalId': (r, i) => r.tasks.getByExternalId(i.externalId!),
   'tasks.cancel': (r, i) => r.tasks.cancel(i.taskId!, i.body),
   'tasks.assign': (r, i) => r.tasks.assign(i.taskId!, i.body),
   'tasks.availableRiders': (r, i) => r.tasks.availableRiders(i.taskId!, i.query),
