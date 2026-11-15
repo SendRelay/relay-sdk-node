@@ -25,6 +25,8 @@ export type SubscribableWebhookEventType =
 	| 'task.stage.arrived'
 	| 'task.details.updated'
 	| 'task.dispatch.rider_unassigned'
+	| 'task.pooling.grouped'
+	| 'task.pooling.solo'
 	// Payment events
 	| 'payment.pending'
 	| 'payment.released'

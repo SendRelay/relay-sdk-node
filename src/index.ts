@@ -79,6 +79,11 @@ export type {
 	AmountInKobo,
 	// Task types
 	TaskType,
+	PooledWave,
+	PooledWindowRequest,
+	PooledState,
+	TaskPooledWindow,
+	PooledQuoteWindow,
 	TaskStatus,
 	Priority,
 	StageType,

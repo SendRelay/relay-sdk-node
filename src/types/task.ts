@@ -13,8 +13,71 @@ export type TaskType =
   | 'PASSENGER_RIDE'
   | 'FOOD_DELIVERY'
   | 'PACKAGE_DELIVERY'
+  /**
+   * A cheaper delivery that goes out in a wave on set days of the week, shared with other deliveries going the same
+   * way. Needs `window`; one PICKUP and one DROPOFF; no `dispatch`.
+   */
+  | 'POOLED_DELIVERY'
+  /** @deprecated Renamed POOLED_DELIVERY; create and quote refuse it (TASK_TYPE_RENAMED). Older tasks keep it. */
   | 'BULK_DELIVERY'
   | 'ERRAND';
+
+/** A pooled delivery wave. SendRelay may add waves; an unknown one arrives as its raw string. */
+export type PooledWave = 'MIDDAY' | (string & {});
+
+/**
+ * `window` on create and quote, POOLED_DELIVERY only. Leave `date` (YYYY-MM-DD, Lagos) out for the
+ * next wave still open. Quote without a window to see the upcoming waves and their prices.
+ */
+export interface PooledWindowRequest {
+  wave: PooledWave;
+  date?: string;
+}
+
+/** Where a pooled delivery stands: waiting for the wave, on a shared route, or going alone. */
+export type PooledState = 'WAITING' | 'GROUPED' | 'SOLO' | (string & {});
+
+/** A pooled delivery's `window` on the task */
+export interface TaskPooledWindow {
+  wave: PooledWave;
+  date: string;
+  /** Last moment to book (and cancel for free) into this wave */
+  bookBy: ISOTimestamp;
+  pickupFrom: ISOTimestamp;
+  pickupTo: ISOTimestamp;
+  deliverBy: ISOTimestamp;
+  state: PooledState;
+  /** How many other deliveries share its route (never who they are) */
+  sharedWith: number | null;
+  plannedPickupAt: ISOTimestamp | null;
+  plannedDeliveryAt: ISOTimestamp | null;
+  /** Stops the rider makes before this delivery's next stop, while that is known */
+  stopsBefore?: number | null;
+}
+
+/** An upcoming wave in a pooled quote, with this delivery's price range in it */
+export interface PooledQuoteWindow {
+  wave: PooledWave;
+  date: string;
+  /** FULL waves refuse bookings with WAVE_FULL */
+  status: 'OPEN' | 'FULL' | (string & {});
+  bookBy: ISOTimestamp;
+  pickupFrom: ISOTimestamp;
+  pickupTo: ISOTimestamp;
+  deliverBy: ISOTimestamp;
+  pricing: {
+    kind: 'RANGE';
+    /** The most you pay: held at booking */
+    maxTotal: AmountInKobo;
+    /** The expected price, from deliveries already booked nearby */
+    total: AmountInKobo;
+    /** The least you pay */
+    minTotal: AmountInKobo;
+  };
+  /** Pass to create with this window to lock the price range */
+  quoteId: string;
+  expiresAt: ISOTimestamp;
+}
 
 /**
  * Task lifecycle status
@@ -375,6 +438,8 @@ export interface Task {
   dispatch: TaskDispatch;
   /** The vehicles SendRelay looks for and the equipment a rider on each needs */
   requirements?: TaskRequirements;
+  /** POOLED_DELIVERY only: its wave and where it stands */
+  window?: TaskPooledWindow;
 }
 
 /**
@@ -455,8 +520,10 @@ export interface CreateTaskRequest {
    * `{ code: '4821' }` uses your own code; `{ length: 4 }` or `{}` has SendRelay generate one.
    */
   completionCode?: CompletionCodeRequest;
-  /** When SendRelay looks for a rider (default: IMMEDIATE) */
+  /** When SendRelay looks for a rider (default: IMMEDIATE). Not on POOLED_DELIVERY */
   dispatch?: DispatchRequest;
+  /** POOLED_DELIVERY only, and required there: the wave to book into */
+  window?: PooledWindowRequest;
   /** A completion photo at every DROPOFF (default: false) */
   requirePhoto?: boolean;
   /**
@@ -480,7 +547,9 @@ export interface CreateTaskRequest {
     | 'SEARCH_THEN_ASSIGNED'
     | 'SEARCH_EXPIRED'
     /** dispatch.onRiderCancel FIND_ANOTHER only: the first rider cancels, a second completes */
-    | 'RIDER_CANCELS_THEN_REASSIGNED';
+    | 'RIDER_CANCELS_THEN_REASSIGNED'
+    /** POOLED_DELIVERY only: no route suits it, so it goes alone at its maximum price */
+    | 'POOLING_SOLO';
 }
 
 /** `relay.tasks.update`: details you can change after create. Anything else is FIELD_NOT_EDITABLE */
@@ -535,6 +604,16 @@ export interface PricingBreakdown {
     distanceKm: number;
     durationMinutes: number;
   };
+  /** POOLED_DELIVERY: `RANGE`, the price is set when the rider starts the route */
+  kind?: 'RANGE';
+  /** POOLED_DELIVERY: the most you pay (held at booking) */
+  maxTotal?: AmountInKobo;
+  /** POOLED_DELIVERY: the least you pay */
+  minTotal?: AmountInKobo;
+  /** POOLED_DELIVERY: the final price, once set; null before */
+  finalTotal?: AmountInKobo | null;
+  /** POOLED_DELIVERY: when the final price was set */
+  finalAt?: ISOTimestamp | null;
   /** Further itemised fees (base, distance, time, …) in kobo */
   [fee: string]: unknown;
 }
@@ -580,7 +659,7 @@ export interface CreateTaskResponse {
  */
 export type TaskQuoteRequest = Pick<
   CreateTaskRequest,
-  'taskType' | 'priority' | 'stages' | 'preferences' | 'dispatch' | 'insured'
+  'taskType' | 'priority' | 'stages' | 'preferences' | 'dispatch' | 'insured' | 'window'
 >;
 
 /**
@@ -605,6 +684,11 @@ export type TaskQuoteResponse = PricingBreakdown & {
   quoteTtlSeconds: number;
   /** What the task will need, as create will store it */
   requirements?: TaskRequirements;
+  /**
+   * POOLED_DELIVERY: the upcoming waves (the one named in `window`, or all of them), each with its
+   * own price range and `quoteId`
+   */
+  windows?: PooledQuoteWindow[];
 };
 
 /**

@@ -19,6 +19,11 @@ export type {
 // Task types
 export type {
 	TaskType,
+	PooledWave,
+	PooledWindowRequest,
+	PooledState,
+	TaskPooledWindow,
+	PooledQuoteWindow,
 	TaskStatus,
 	Priority,
 	StageType,
