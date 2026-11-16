@@ -29,6 +29,10 @@ import type {
   TrackingLinkRequest,
   TrackingLinkResponse,
   UpdateTaskRequest,
+  Approval,
+  ApprovalDecisionRequest,
+  FileViewResponse,
+  ListApprovalsResponse,
 } from '../types';
 import { ApiError, ValidationError } from '../errors';
 import type { HttpClient } from '../utils/http';
@@ -257,6 +261,65 @@ export class Tasks {
    */
   async trackingLink(taskId: string, request: TrackingLinkRequest = {}): Promise<TrackingLinkResponse> {
     return this.http.post<TrackingLinkResponse>(`/sdk/tasks/${taskId}/tracking-link`, request);
+  }
+
+  /**
+   * An errand's questions from the rider, oldest first: open ones (`status: 'PENDING'`) and those
+   * already answered or closed.
+   *
+   * @example
+   * ```typescript
+   * const { approvals } = await relay.tasks.approvals(task.id);
+   * const open = approvals.filter((approval) => approval.status === 'PENDING');
+   * ```
+   */
+  async approvals(taskId: string): Promise<ListApprovalsResponse> {
+    return this.http.get<ListApprovalsResponse>(`/sdk/tasks/${taskId}/approvals`);
+  }
+
+  /**
+   * Answer a question from the rider, once. The same decision again returns the approval as it
+   * stands; a different one after it was decided is a 409.
+   *
+   * @example
+   * ```typescript
+   * await relay.tasks.decideApproval(task.id, approval.id, { decision: 'APPROVE', note: 'Yes, the 1 kg pack is fine' });
+   * ```
+   */
+  async decideApproval(taskId: string, approvalId: string, request: ApprovalDecisionRequest): Promise<Approval> {
+    if (!approvalId) throw new ValidationError('approvalId is required', 'approvalId');
+    return this.http.post<Approval>(`/sdk/tasks/${taskId}/approvals/${encodeURIComponent(approvalId)}`, request);
+  }
+
+  /**
+   * Drop a work stage of an errand that the rider has not reached. You are not charged for it,
+   * and a drop-off left with nothing to deliver is skipped too. Returns the task as it now stands.
+   *
+   * @example
+   * ```typescript
+   * const { task: updated } = await relay.tasks.skipStage(task.id, 1);
+   * ```
+   */
+  async skipStage(taskId: string, stageIndex: number): Promise<{ task: Task }> {
+    if (!Number.isInteger(stageIndex) || stageIndex < 0) throw new ValidationError('stageIndex must be a whole number from 0', 'stageIndex');
+    return this.http.post<{ task: Task }>(`/sdk/tasks/${taskId}/stages/${stageIndex}/skip`);
+  }
+
+  /**
+   * A 15-minute link to a photo or receipt that a stage's `result` or an approval names. Any other
+   * file is a 404 `FILE_NOT_FOUND`.
+   *
+   * @example
+   * ```typescript
+   * const receipt = task.stages[1].result?.receipt;
+   * if (receipt) {
+   *   const { downloadUrl } = await relay.tasks.viewFile(task.id, receipt);
+   * }
+   * ```
+   */
+  async viewFile(taskId: string, fileUrl: string): Promise<FileViewResponse> {
+    if (!fileUrl) throw new ValidationError('fileUrl is required', 'fileUrl');
+    return this.http.post<FileViewResponse>(`/sdk/tasks/${taskId}/files/view`, { fileUrl });
   }
 
   async events(taskId: string): Promise<TaskEventsResponse> {

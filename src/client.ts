@@ -11,6 +11,7 @@ import { Tasks } from './resources/tasks';
 import { Webhooks } from './resources/webhooks';
 import { Events } from './resources/events';
 import { Claims } from './resources/claims';
+import { Errands } from './resources/errands';
 import { HttpClient, type HttpClientOptions } from './utils/http';
 
 /**
@@ -166,6 +167,12 @@ export class RelayClient {
    */
   public readonly claims: Claims;
 
+  /**
+   * Errands: the price list and limits for work stages
+   * - options
+   */
+  public readonly errands: Errands;
+
   constructor(options: RelayClientOptions) {
     // Validate API key
     if (!options.apiKey) {
@@ -207,6 +214,7 @@ export class RelayClient {
     this.presence = new Presence(this.http);
     this.events = new Events(this.http);
     this.claims = new Claims(this.http);
+    this.errands = new Errands(this.http);
   }
 
   /**

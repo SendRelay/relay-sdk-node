@@ -58,6 +58,9 @@ export { RelayClient, type RelayClientOptions } from './client';
 // Default export
 export { RelayClient as default } from './client';
 
+// Errand stage builders
+export { Errand, type ErrandStageOptions } from './errand';
+
 // Error classes
 export {
 	RelayError,
@@ -157,6 +160,38 @@ export type {
 	ListEventsRequest,
 	ListEventsResponse,
 	TaskEventsResponse,
+	// Errand types
+	WorkStageType,
+	IfUnavailable,
+	PayWith,
+	CustomEffort,
+	QuestionType,
+	StageFailureReason,
+	StageSkipReason,
+	PurchaseItem,
+	ErrandQuestion,
+	MerchantAccount,
+	StageSimulate,
+	OpeningHours,
+	WorkStageFields,
+	ApprovalsPolicy,
+	PurchaseItemResult,
+	StageResult,
+	ApprovalKind,
+	ApprovalStatus,
+	Approval,
+	ApprovalDecisionRequest,
+	ListApprovalsResponse,
+	ErrandSummary,
+	ErrandBillLine,
+	ErrandQuotePricing,
+	ErrandFinalBill,
+	ErrandPricing,
+	TaskSchedule,
+	ErrandWarningCode,
+	ErrandWarning,
+	ErrandOptions,
+	FileViewResponse,
 	// Insurance claim types
 	Claim,
 	ClaimFile,

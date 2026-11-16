@@ -19,7 +19,17 @@ type Exchange = {
 type Fixture = {
   name: string;
   operation: string;
-  input: { taskId?: string; webhookId?: string; externalId?: string; body?: any; query?: any; idempotencyKey?: string };
+  input: {
+    taskId?: string;
+    webhookId?: string;
+    externalId?: string;
+    approvalId?: string;
+    stageIndex?: number;
+    fileUrl?: string;
+    body?: any;
+    query?: any;
+    idempotencyKey?: string;
+  };
   exchanges: Exchange[];
   expect: { result?: Record<string, unknown>; items?: string[]; error?: Record<string, unknown> };
 };
@@ -65,6 +75,11 @@ const bindings: Record<string, Binding> = {
   'claims.file': (r, i) => r.claims.file(i.taskId!, i.body),
   'claims.respond': (r, i) => r.claims.respond(i.taskId!, i.body),
   'claims.withdraw': (r, i) => r.claims.withdraw(i.taskId!),
+  'errands.options': (r) => r.errands.options(),
+  'tasks.approvals': (r, i) => r.tasks.approvals(i.taskId!),
+  'tasks.decideApproval': (r, i) => r.tasks.decideApproval(i.taskId!, i.approvalId!, i.body),
+  'tasks.skipStage': (r, i) => r.tasks.skipStage(i.taskId!, i.stageIndex!),
+  'tasks.viewFile': (r, i) => r.tasks.viewFile(i.taskId!, i.fileUrl!),
 };
 // Operations checked by a dedicated fixture file rather than an HTTP exchange.
 const localOperations = new Set(['webhooks.verifySignature']);

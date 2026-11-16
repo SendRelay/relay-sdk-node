@@ -16,6 +16,41 @@ export type {
 	AmountInKobo,
 } from './common';
 
+// Errand types
+export type {
+	WorkStageType,
+	IfUnavailable,
+	PayWith,
+	CustomEffort,
+	QuestionType,
+	StageFailureReason,
+	StageSkipReason,
+	PurchaseItem,
+	ErrandQuestion,
+	MerchantAccount,
+	StageSimulate,
+	OpeningHours,
+	WorkStageFields,
+	ApprovalsPolicy,
+	PurchaseItemResult,
+	StageResult,
+	ApprovalKind,
+	ApprovalStatus,
+	Approval,
+	ApprovalDecisionRequest,
+	ListApprovalsResponse,
+	ErrandSummary,
+	ErrandBillLine,
+	ErrandQuotePricing,
+	ErrandFinalBill,
+	ErrandPricing,
+	TaskSchedule,
+	ErrandWarningCode,
+	ErrandWarning,
+	ErrandOptions,
+	FileViewResponse,
+} from './errand';
+
 // Task types
 export type {
 	TaskType,

@@ -5,6 +5,22 @@
  */
 
 import type { AmountInKobo, ISOTimestamp, Location, UUID } from './common';
+import type {
+  Approval,
+  ApprovalsPolicy,
+  ErrandPricing,
+  ErrandQuestion,
+  ErrandQuotePricing,
+  ErrandSummary,
+  ErrandWarning,
+  PurchaseItem,
+  StageFailureReason,
+  StageResult,
+  StageSkipReason,
+  TaskSchedule,
+  WorkStageFields,
+  WorkStageType,
+} from './errand';
 
 /**
  * Type of delivery task
@@ -160,14 +176,14 @@ export interface TaskDispatch {
 export type Priority = 'STANDARD' | 'URGENT';
 
 /**
- * Stage type in a task
+ * Stage type in a task. The five work types are for `ERRAND` only (see `WorkStageType`).
  */
-export type StageType = 'PICKUP' | 'DROPOFF';
+export type StageType = 'PICKUP' | 'DROPOFF' | WorkStageType;
 
 /**
- * Stage completion status
+ * Stage status. FAILED and SKIPPED appear only on errands with work stages; the rider goes on.
  */
-export type StageStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+export type StageStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'SKIPPED';
 
 /**
  * Item weight category
@@ -235,17 +251,17 @@ export interface Passenger {
 }
 
 /**
- * Task stage (pickup or dropoff location)
+ * Task stage: a pickup, a drop-off, or on an errand a job at a place (`WorkStageFields`)
  */
-export interface Stage {
+export interface Stage extends Omit<WorkStageFields, 'items'> {
   /** Stage type */
   type: StageType;
   /** Location */
   location: Location;
   /** Special instructions for the rider */
   instructions: string;
-  /** Items in this stage (cargo tasks) */
-  items?: Item[];
+  /** Items in this stage (cargo tasks), or a PURCHASE's shopping list */
+  items?: Item[] | PurchaseItem[];
   /** Passengers in this stage (passenger tasks) */
   passengers?: Passenger[];
   /** Stage status */
@@ -271,6 +287,14 @@ export interface Stage {
   arrivedAt?: ISOTimestamp | null;
   /** Response: seconds from arrivedAt to completedAt (information only) */
   waitSeconds?: number | null;
+  /** Response, errands: when the rider is expected here, as quoted */
+  plannedArrivalAt?: ISOTimestamp;
+  /** Response, errand work stages: what came back */
+  result?: StageResult | null;
+  /** Response, errand work stages: why it was not done or was skipped */
+  reason?: StageFailureReason | StageSkipReason | null;
+  /** Response, errand work stages: the open question here, else the latest */
+  approval?: Approval | null;
 }
 
 /** Who to call at a stop */
@@ -390,8 +414,8 @@ export interface Task {
   paymentStatus: PaymentStatus | null;
   /** Payment method */
   paymentMethod: PaymentMethod;
-  /** Parsed pricing object */
-  pricing: Record<string, unknown> | null;
+  /** Parsed pricing object. On an errand with work stages, an `ErrandPricing` range */
+  pricing: (Record<string, unknown> & Partial<ErrandPricing>) | null;
   /** Creation timestamp */
   createdAt: ISOTimestamp;
   /** Last update timestamp */
@@ -440,6 +464,12 @@ export interface Task {
   requirements?: TaskRequirements;
   /** POOLED_DELIVERY only: its wave and where it stands */
   window?: TaskPooledWindow;
+  /** ERRAND with work stages: how far it got (`outcome` is set when it ends) */
+  errand?: ErrandSummary;
+  /** ERRAND with work stages: how long the rider waits for your answer, and what happens then */
+  approvals?: Required<ApprovalsPolicy>;
+  /** "Never charge me more than this", in kobo, when you set one */
+  priceLimit?: AmountInKobo;
 }
 
 /**
@@ -526,6 +556,10 @@ export interface CreateTaskRequest {
   window?: PooledWindowRequest;
   /** A completion photo at every DROPOFF (default: false) */
   requirePhoto?: boolean;
+  /** "Never charge me more than this", in kobo: a quote whose maximum is above it is refused */
+  priceLimit?: AmountInKobo;
+  /** ERRAND with work stages: how long the rider waits for your answer (default 300 s, DECLINE) */
+  approvals?: ApprovalsPolicy;
   /**
    * Insurance on the items' declared values. On by default; `false` turns it off for this task, so
    * no premium is charged and loss or damage is not covered. Send the same value you quoted.
@@ -556,14 +590,25 @@ export interface CreateTaskRequest {
 export interface UpdateTaskRequest {
   notes?: string | null;
   externalId?: string | null;
-  /** Per stop, until that stop is completed. `contact: null` removes it */
-  stages?: Array<{ index: number; instructions?: string; contact?: StageContact | null }>;
+  /**
+   * Per stop, until that stop is completed. `contact: null` removes it. On an errand, until the
+   * rider gets there: `items` replaces a PURCHASE list and `questions` an INSPECTION checklist
+   */
+  stages?: Array<{
+    index: number;
+    instructions?: string;
+    contact?: StageContact | null;
+    items?: PurchaseItem[];
+    questions?: ErrandQuestion[];
+  }>;
 }
 
 /** `relay.tasks.trackingLink` */
 export interface TrackingLinkRequest {
   /** Limit the link to one DROPOFF: that recipient sees only their own stop */
   stageIndex?: number;
+  /** Errands: the person with the link may answer the open questions that fit inside the held maximum */
+  canAnswer?: boolean;
 }
 
 /** A hosted tracking page to send your customer. SendRelay never contacts them itself */
@@ -652,6 +697,13 @@ export interface CreateTaskResponse {
     status: string;
     note: string;
   };
+  /** ERRAND with work stages: the range held (`pricing.total` is its maximum) */
+  errand?: ErrandQuotePricing;
+  /** ERRAND with work stages, or SCHEDULED: when the rider is expected at each stop */
+  schedule?: TaskSchedule;
+  /** Things worth a look; never blocking */
+  warnings?: ErrandWarning[];
+  approvals?: Required<ApprovalsPolicy>;
 }
 
 /**
@@ -659,7 +711,7 @@ export interface CreateTaskResponse {
  */
 export type TaskQuoteRequest = Pick<
   CreateTaskRequest,
-  'taskType' | 'priority' | 'stages' | 'preferences' | 'dispatch' | 'insured' | 'window'
+  'taskType' | 'priority' | 'stages' | 'preferences' | 'dispatch' | 'insured' | 'window' | 'priceLimit' | 'approvals'
 >;
 
 /**
@@ -689,6 +741,15 @@ export type TaskQuoteResponse = PricingBreakdown & {
    * own price range and `quoteId`
    */
   windows?: PooledQuoteWindow[];
+  /** ERRAND with work stages: the range (`total` above is its maximum, the amount held) */
+  pricing?: ErrandQuotePricing;
+  /** ERRAND with work stages, or SCHEDULED: when the rider is expected at each stop */
+  schedule?: TaskSchedule;
+  /** Things worth a look before you pay; never blocking */
+  warnings?: ErrandWarning[];
+  /** ERRAND with work stages: each stage with every default written out */
+  stages?: Stage[];
+  approvals?: Required<ApprovalsPolicy>;
 };
 
 /**

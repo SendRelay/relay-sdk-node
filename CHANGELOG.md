@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.0 — 2026-11-16
+
+- Errands with work stages: `taskType: 'ERRAND'` takes the stage types `PURCHASE`, `PAYMENT`, `QUEUE`, `INSPECTION` and `CUSTOM` beside `PICKUP` and `DROPOFF`, with their fields on `Stage` (`WorkStageFields`: `reference`, `expectedMinutes`, `maxMinutes`, `openingHours`, shopping-list `items`, `spendLimit`, `payWith`, `payee`, `amount`, `questions`, `effort`, and `simulate` for test keys). The `Errand` builders (`Errand.queue`, `Errand.purchase`, `Errand.payment`, `Errand.inspection`, `Errand.custom`, `Errand.pickup`, `Errand.dropoff`) write the same JSON. See [errands](https://docs.sendrelay.com.ng/errands).
+- `priceLimit` and `approvals` on create and quote. An errand quote returns `pricing` (`ErrandQuotePricing`, a range), `schedule`, `warnings` and `stages`; create returns `errand`, `schedule`, `warnings` and `approvals`. Tasks carry `errand` (`ErrandSummary`), and stages `result`, `reason`, `approval` and `plannedArrivalAt`; stage statuses add `FAILED` and `SKIPPED`.
+- `relay.errands.options()`, `relay.tasks.approvals(taskId)`, `relay.tasks.decideApproval(taskId, approvalId, { decision, note })`, `relay.tasks.skipStage(taskId, stageIndex)` and `relay.tasks.viewFile(taskId, fileUrl)`. `relay.tasks.update()` also changes an errand stop's `items` or `questions`, and `trackingLink()` takes `canAnswer`.
+- Other task types are unchanged.
+
 ## 1.14.0 — 2026-11-15
 
 - `relay.tasks.getByExternalId(externalId)`: the task with the `externalId` you gave it at create, as `get` returns it, or `null` if none has it (`GET /v1/sdk/tasks/by-external-id/{externalId}`). The reference is percent-encoded, so it can hold a slash.
